@@ -1,3 +1,3 @@
-create 2 folders: unprocessed and processed
-for now, after scraper.js successfully completes, save all cars as JSON as a new file and put it in unprocessed folder. the name of the file should be the completion datetime of the scraper.js run
-also after the scraper.js runs, display a summary like how many cars have been found, total run time etc.
+calling 400 pages synchronously is very time consuming
+i want to call like 10 pages at a given time (async, multi tasking)
+code this up, make sure that there is a config flag to decide number of async background calls, default to 10
