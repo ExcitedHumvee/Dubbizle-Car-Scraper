@@ -32,10 +32,6 @@ function parseHtmlFile(filePath) {
         });
         const title = titleParts.join(' ');
 
-        const priceText = card.find('[data-testid="listing-price"]').text().trim();
-        const [currency, ...priceParts] = priceText.split(' ');
-        const price = priceParts.join('');
-
         const detailPageUrl = card.attr('href');
         const listingIdMatch = detailPageUrl ? detailPageUrl.match(/---([a-z0-9]+)/) : null;
         const uuid = listingIdMatch ? listingIdMatch[1] : null;
@@ -46,8 +42,7 @@ function parseHtmlFile(filePath) {
             listingId: uuid,
             detailPageUrl: detailPageUrl ? `https://dubai.dubizzle.com${detailPageUrl}` : null,
             title: title,
-            price: price ? parseInt(price.replace(/,/g, ''), 10) : null,
-            currency: currency.replace('undefined\n', '').trim().replace(/,/g, '') || 'AED',
+            price: listing.price || null,
             sellerType: details['Seller type']?.en.value || null,
             isNegotiable: card.text().toLowerCase().includes('negotiable'),
             thumbnailUrl: card.find('img').attr('src'),
