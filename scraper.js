@@ -16,6 +16,8 @@ if (SAVE_HTML_PAGES === false) {
 // --- Setup Directories ---
 const htmlDir = path.join(__dirname, 'html_files');
 const errorsDir = path.join(__dirname, 'errors');
+const unprocessedDir = path.join(__dirname, 'unprocessed');
+const processedDir = path.join(__dirname, 'processed');
 
 if (!fs.existsSync(htmlDir)) {
     fs.mkdirSync(htmlDir, { recursive: true });
@@ -23,8 +25,15 @@ if (!fs.existsSync(htmlDir)) {
 if (!fs.existsSync(errorsDir)) {
     fs.mkdirSync(errorsDir, { recursive: true });
 }
+if (!fs.existsSync(unprocessedDir)) {
+    fs.mkdirSync(unprocessedDir, { recursive: true });
+}
+if (!fs.existsSync(processedDir)) {
+    fs.mkdirSync(processedDir, { recursive: true });
+}
 
 async function scrapeCars() {
+    const startTime = new Date();
     console.log('--- Launching browser ---');
     const browser = await chromium.launch({ headless: false });
     const page = await browser.newPage();
@@ -70,9 +79,9 @@ async function scrapeCars() {
 
             // *** SAVE RAW HTML TO FILE ***
             if (SAVE_HTML_PAGES) {
-                const htmlFilePath = path.join(htmlDir, `page_${pageNum}.html`);
-                fs.writeFileSync(htmlFilePath, html);
-                console.log(`Raw HTML for page ${pageNum} has been saved to: ${htmlFilePath}`);
+            const htmlFilePath = path.join(htmlDir, `page_${pageNum}.html`);
+            fs.writeFileSync(htmlFilePath, html);
+            console.log(`Raw HTML for page ${pageNum} has been saved to: ${htmlFilePath}`);
             }
 
             const $ = cheerio.load(html);
@@ -156,10 +165,17 @@ async function scrapeCars() {
     await browser.close();
     console.log('\n--- Browser closed ---');
 
-    console.log('\n--- Final Scraped Data ---');
-    console.log(JSON.stringify(allCars, null, 2));
-    console.log(`
-Total cars scraped: ${allCars.length}`);
+    const endTime = new Date();
+    const runTime = (endTime - startTime) / 1000;
+    const completionDate = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
+    const outputFilePath = path.join(unprocessedDir, `${completionDate}.json`);
+
+    fs.writeFileSync(outputFilePath, JSON.stringify(allCars, null, 2));
+
+    console.log('\n--- Scraping Summary ---');
+    console.log(`Total cars scraped: ${allCars.length}`);
+    console.log(`Total run time: ${runTime} seconds`);
+    console.log(`Scraped data saved to: ${outputFilePath}`);
 }
 
 scrapeCars();
