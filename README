@@ -1,6 +1,3 @@
 npm start
+npm test (wont call dubizzle servers)
 TODO:
-    "currency": "349,000" it should not conatin , only mumbers 
-    get rid of postedDate in output
-    i can see price field always null and currency field always has price value. i just want a price field with number only
-    Target Market
