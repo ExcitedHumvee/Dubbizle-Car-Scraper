@@ -74,11 +74,11 @@ function parseHtmlFile(filePath) {
             make: details['Make']?.en.value || null,
             model: details['Model']?.en.value || null,
             motorsTrim: details['Motors Trim']?.en.value || null,
-            createdAt: listing.created_at || null,
+            createdAt: listing.created_at ? new Date(listing.created_at * 1000).toISOString() : null,
             isVerifiedUser: listing.is_verified_user || null,
             isPremium: listing.is_premium || null,
             neighbourhood: listing.neighbourhood?.en || null,
-            added: listing.added || null,
+            added: listing.added ? new Date(listing.added * 1000).toISOString() : null,
         });
     });
 }
