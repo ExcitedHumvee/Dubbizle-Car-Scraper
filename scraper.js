@@ -3,7 +3,10 @@ const cheerio = require('cheerio');
 const fs = require('fs'); // File System module for writing files
 const path = require('path'); // Path module for creating file paths
 
+// Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
+const FIRST_PAGE = 1;
+const LAST_PAGE = 2; // do not go greater than 400
 
 // --- Setup Directories ---
 const htmlDir = path.join(__dirname, 'html_files');
@@ -24,7 +27,7 @@ async function scrapeCars() {
     const allCars = [];
 
     // Scrape the first 2 pages
-    for (let pageNum = 250; pageNum <= 251; pageNum++) {
+    for (let pageNum = FIRST_PAGE; pageNum <= LAST_PAGE; pageNum++) {
         const url = `${BASE_URL}?page=${pageNum}`;
         console.log(`
 --- Scraping Page ${pageNum} ---`);
