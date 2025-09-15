@@ -9,6 +9,7 @@ const FIRST_PAGE = 1;
 const LAST_PAGE = 400; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
 const CONCURRENT_PAGES = 10;
+const PAGE_TIMEOUT = 10; // seconds we wait for page to load
 
 if (SAVE_HTML_PAGES === false) {
     console.warn('WARNING: SAVE_HTML_PAGES is set to false. Raw HTML pages will not be saved.');
@@ -67,7 +68,7 @@ async function scrapePage(browser, pageNum) {
 
         // --- MAIN SCRAPING LOGIC ---
         const LISTING_CARD_SELECTOR = 'a[data-testid^="listing-"]';
-        await page.waitForSelector(LISTING_CARD_SELECTOR, { timeout: 5000 });
+        await page.waitForSelector(LISTING_CARD_SELECTOR, { timeout: 1000 * PAGE_TIMEOUT });
         console.log('Listings found. Extracting data...');
 
         const html = await page.content();

@@ -1,3 +1,1 @@
-calling 400 pages synchronously is very time consuming
-i want to call like 10 pages at a given time (async, multi tasking)
-code this up, make sure that there is a config flag to decide number of async background calls, default to 10
+in the summary of scraper.js say how many pages were unsuccessful
