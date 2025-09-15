@@ -67,6 +67,15 @@ async function scrapeCars() {
 
             const $ = cheerio.load(html);
 
+            const nextData = JSON.parse($('#__NEXT_DATA__').html());
+            const listingsAction = nextData.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled');
+            const listings = listingsAction ? listingsAction.payload.hits : [];
+
+            const listingMap = listings.reduce((acc, listing) => {
+                acc[listing.uuid] = listing;
+                return acc;
+            }, {});
+
             const carListings = $(LISTING_CARD_SELECTOR);
             console.log(`Found ${carListings.length} car listings on page ${pageNum}.`);
 
@@ -79,26 +88,47 @@ async function scrapeCars() {
                 });
                 const title = titleParts.join(' ');
 
-                const priceText = card.find('[data-testid="listing-price"]').text().trim();
-                const [currency, ...priceParts] = priceText.split(' ');
-                const price = priceParts.join('');
-
                 const detailPageUrl = card.attr('href');
+                const listingIdMatch = detailPageUrl ? detailPageUrl.match(/---([a-z0-9]+)/) : null;
+                const uuid = listingIdMatch ? listingIdMatch[1] : null;
+                const listing = listingMap[uuid] || {};
+                const details = listing.details || {};
 
                 allCars.push({
-                    listingId: detailPageUrl ? detailPageUrl.match(/\/([^/]+)\/$/)?.[1] : null,
+                    listingId: uuid,
                     detailPageUrl: detailPageUrl ? `https://dubai.dubizzle.com${detailPageUrl}` : null,
                     title: title,
-                    price: price ? parseInt(price.replace(/,/g, ''), 10) : null,
-                    currency: currency || 'AED',
+                    price: listing.price || null,
+                    sellerType: details['Seller type']?.en.value || null,
                     isNegotiable: card.text().toLowerCase().includes('negotiable'),
                     thumbnailUrl: card.find('img').attr('src'),
                     year: parseInt(card.find('[data-testid="listing-year"]').text().trim(), 10) || null,
                     mileage: parseInt(card.find('[data-testid="listing-kms"]').text().trim().replace(/,/g, ''), 10) || null,
                     location: card.find('.mui-style-t0mppt').text().trim(),
-                    postedDate: card.find('[data-testid="listing-posted-date"]').text().trim() || null,
-                    badges: card.find('[data-testid*="-badge"]').map((i, el) => $(el).text().trim()).get(),
-                    attributes: [],
+                    badges: card.find('[data-testid*="-badge"]').map((i, el) => $(el).text().trim().replace('undefined', '')).get(),
+                    interiorColor: details['Interior Color']?.en.value || null,
+                    horsepower: details['Horsepower']?.en.value || null,
+                    exteriorColor: details['Exterior Color']?.en.value || null,
+                    doors: details['Doors']?.en.value || null,
+                    bodyType: details['Body Type']?.en.value || null,
+                    seatingCapacity: details['Seating Capacity']?.en.value || null,
+                    cylinders: details['No. of Cylinders']?.en.value || null,
+                    transmissionType: details['Transmission Type']?.en.value || null,
+                    engineCapacity: details['Engine Capacity (cc)']?.en.value || null,
+                    extras: details['Extras']?.en.value || [],
+                    technicalFeatures: details['Technical Features']?.en.value || [],
+                    trim: details['Trim']?.en.value || null,
+                    warranty: details['Warranty']?.en.value || null,
+                    fuelType: details['Fuel Type']?.en.value || null,
+                    vehicleReference: details['Vehicle Reference']?.en.value || null,
+                    make: details['Make']?.en.value || null,
+                    model: details['Model']?.en.value || null,
+                    motorsTrim: details['Motors Trim']?.en.value || null,
+                    createdAt: listing.created_at ? new Date(listing.created_at * 1000).toISOString() : null,
+                    isVerifiedUser: listing.is_verified_user || null,
+                    isPremium: listing.is_premium || null,
+                    neighbourhood: listing.neighbourhood?.en || null,
+                    added: listing.added ? new Date(listing.added * 1000).toISOString() : null,
                 });
             });
 
