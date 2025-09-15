@@ -1,13 +1,6 @@
 npm start
 TODO:
-    "created_at": 1754684690 (convert from unix timestamp to standard readable datetime)
-    "is_verified_user": true
-    is_premium
-    neighbourhood
-    "added": 1757881604 (convert to unix timestamp to standard readable datetime)
-    
-    
-    
-
-    need to format output better
+    "currency": "349,000" it should not conatin , only mumbers 
+    get rid of postedDate in output
+    i can see price field always null and currency field always has price value. i just want a price field with number only
     Target Market
