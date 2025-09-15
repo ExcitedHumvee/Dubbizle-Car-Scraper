@@ -24,7 +24,7 @@ async function scrapeCars() {
     const allCars = [];
 
     // Scrape the first 2 pages
-    for (let pageNum = 1; pageNum <= 2; pageNum++) {
+    for (let pageNum = 250; pageNum <= 251; pageNum++) {
         const url = `${BASE_URL}?page=${pageNum}`;
         console.log(`
 --- Scraping Page ${pageNum} ---`);
