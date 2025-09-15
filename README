@@ -1,35 +1,13 @@
 npm start
 TODO:
-    seller type (could be dealer, owner etc.)
-    Interior Color
-    Horsepower
-    Exterior Color
-    Doors
-    Body Type
-    Seating Capacity
-    No. of Cylinders
-    Transmission Type
-    Engine Capacity (cc)
-    Extras
-    Technical Features
-    Trim
-    Warranty
-    Fuel Type
-    Vehicle Reference
-    Make
-    Model
-    Motors Trim
-
-    neighbourhood
-    is_premium
-    "added": 1757881604 (convert to unix timestamp to standard readable datetime)
-    "is_verified_user": true
     "created_at": 1754684690 (convert from unix timestamp to standard readable datetime)
-    "is_featured_agent": false (convert from unix timestamp to standard readable datetime)
+    "is_verified_user": true
+    is_premium
+    neighbourhood
+    "added": 1757881604 (convert to unix timestamp to standard readable datetime)
     
     
-    Agent (may not be present)
+    
 
     need to format output better
-
     Target Market

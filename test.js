@@ -14,8 +14,8 @@ function parseHtmlFile(filePath) {
     const listingsAction = nextData.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled');
     const listings = listingsAction ? listingsAction.payload.hits : [];
 
-    const listingDetailsMap = listings.reduce((acc, listing) => {
-        acc[listing.uuid] = listing.details;
+    const listingMap = listings.reduce((acc, listing) => {
+        acc[listing.uuid] = listing;
         return acc;
     }, {});
 
@@ -39,7 +39,8 @@ function parseHtmlFile(filePath) {
         const detailPageUrl = card.attr('href');
         const listingIdMatch = detailPageUrl ? detailPageUrl.match(/---([a-z0-9]+)/) : null;
         const uuid = listingIdMatch ? listingIdMatch[1] : null;
-        const details = listingDetailsMap[uuid] || {};
+        const listing = listingMap[uuid] || {};
+        const details = listing.details || {};
 
         allCars.push({
             listingId: uuid,
@@ -73,6 +74,11 @@ function parseHtmlFile(filePath) {
             make: details['Make']?.en.value || null,
             model: details['Model']?.en.value || null,
             motorsTrim: details['Motors Trim']?.en.value || null,
+            createdAt: listing.created_at || null,
+            isVerifiedUser: listing.is_verified_user || null,
+            isPremium: listing.is_premium || null,
+            neighbourhood: listing.neighbourhood?.en || null,
+            added: listing.added || null,
         });
     });
 }
