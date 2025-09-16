@@ -5,11 +5,11 @@ const path = require('path'); // Path module for creating file paths
 
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
-const FIRST_PAGE = 1;
-const LAST_PAGE = 100; // do not go greater than 400
+const FIRST_PAGE = 200;
+const LAST_PAGE = 400; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
 const CONCURRENT_PAGES = 10;
-const PAGE_TIMEOUT = 5; // seconds we wait for page to load
+const TIMEOUT = 10; // seconds
 
 if (SAVE_HTML_PAGES === false) {
     console.warn('WARNING: SAVE_HTML_PAGES is set to false. Raw HTML pages will not be saved.');
@@ -36,20 +36,18 @@ if (!fs.existsSync(processedDir)) {
 
 async function scrapePage(browser, pageNum) {
     const url = `${BASE_URL}?page=${pageNum}`;
-    // console.log(`--- Scraping Page ${pageNum} ---`);
     console.log(`Navigating to: ${url}`);
-    const page = await browser.newPage();
-    const carsOnPage = [];
-
+    let context;
     try {
-        // console.log('>>> ACTION REQUIRED: If a CAPTCHA appears, please solve it in the browser window.');
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
+        context = await browser.newContext();
+        const page = await context.newPage();
+        const carsOnPage = [];
 
-        // console.log('Page loaded. Looking for pop-ups and listings...');
+        await page.goto(url, { waitUntil: 'networkidle', timeout: TIMEOUT * 1000 });
 
         // --- POP-UP HANDLING ---
         try {
-            await page.waitForSelector('a[data-testid^="listing-"], #moe-dontallow_button, [data-testid="close-button"]', { timeout: 5000 });
+            await page.waitForSelector('a[data-testid^="listing-"], #moe-dontallow_button, [data-testid="close-button"]', { timeout: TIMEOUT * 1000 });
 
             if (await page.isVisible('#moe-dontallow_button')) {
                 console.log('Notifications pop-up found. Clicking "Don\'t Allow".');
@@ -66,12 +64,10 @@ async function scrapePage(browser, pageNum) {
 
         // --- MAIN SCRAPING LOGIC ---
         const LISTING_CARD_SELECTOR = 'a[data-testid^="listing-"]';
-        await page.waitForSelector(LISTING_CARD_SELECTOR, { timeout: 1000 * PAGE_TIMEOUT });
-        // console.log('Listings found. Extracting data...');
+        await page.waitForSelector(LISTING_CARD_SELECTOR, { timeout: TIMEOUT * 1000 });
 
         const html = await page.content();
 
-        // *** SAVE RAW HTML TO FILE ***
         if (SAVE_HTML_PAGES) {
             const htmlFilePath = path.join(htmlDir, `page_${pageNum}.html`);
             fs.writeFileSync(htmlFilePath, html);
@@ -147,13 +143,13 @@ async function scrapePage(browser, pageNum) {
         return { success: true, cars: carsOnPage };
     } catch (error) {
         console.error(`An error occurred on page ${pageNum}:`, error.message);
-
         const timestamp = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
         const errorFileName = `error_page_${pageNum}_${timestamp}`;
 
         // *** SAVE ERROR HTML ***
         const errorHtmlPath = path.join(htmlDir, `${errorFileName}.html`);
         try {
+            const page = await browser.newPage();
             const html = await page.content();
             fs.writeFileSync(errorHtmlPath, html);
             console.error(`Error HTML saved to: ${errorHtmlPath}`);
@@ -164,6 +160,8 @@ async function scrapePage(browser, pageNum) {
         // *** SAVE ERROR SCREENSHOT ***
         const errorScreenshotPath = path.join(errorsDir, `${errorFileName}.png`);
         try {
+            const page = await browser.newPage();
+            await page.goto(url);
             await page.screenshot({ path: errorScreenshotPath });
             console.error(`Error screenshot saved to: ${errorScreenshotPath}`);
         } catch (screenshotError) {
@@ -172,7 +170,9 @@ async function scrapePage(browser, pageNum) {
 
         return { success: false, url: url };
     } finally {
-        await page.close();
+        if (context) {
+            await context.close();
+        }
     }
 }
 
