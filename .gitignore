@@ -1,5 +1,14 @@
-node_modules/
+# Dependencies
+/node_modules
+
+# Environment variables
 .env
+
+# Log files
 *.log
-errors/
-html_files/
+
+# Data files
+/unprocessed
+/processed
+/html_files
+/errors
