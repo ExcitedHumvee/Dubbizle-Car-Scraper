@@ -1,2 +1,2 @@
-in the summary of scraper.js say how many pages were unsuccessful
+in the summary of scraper.js say how many pages were unsuccessful, and list the pages
 if a page had an error, mandatorily save the html
