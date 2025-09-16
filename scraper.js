@@ -185,22 +185,42 @@ async function scrapeCars() {
     let unsuccessfulPages = 0;
     const unsuccessfulPageUrls = [];
 
-    for (let i = FIRST_PAGE; i <= LAST_PAGE; i += CONCURRENT_PAGES) {
-        const promises = [];
-        for (let j = 0; j < CONCURRENT_PAGES && i + j <= LAST_PAGE; j++) {
-            promises.push(scrapePage(browser, i + j));
-        }
-        const results = await Promise.all(promises);
-        results.forEach(result => {
-            if (result.success) {
-                allCars.push(...result.cars);
-                successfulPages++;
-            } else {
-                unsuccessfulPages++;
-                unsuccessfulPageUrls.push(result.url);
-            }
-        });
+    const pageNumbers = [];
+    for (let i = FIRST_PAGE; i <= LAST_PAGE; i++) {
+        pageNumbers.push(i);
     }
+
+    async function scrapeWorker(pageNumber) {
+        const result = await scrapePage(browser, pageNumber);
+        if (result.success) {
+            allCars.push(...result.cars);
+            successfulPages++;
+        } else {
+            unsuccessfulPages++;
+            unsuccessfulPageUrls.push(result.url);
+        }
+    }
+
+    const workers = [];
+    for (let i = 0; i < CONCURRENT_PAGES; i++) {
+        const pageNum = pageNumbers.shift();
+        if (pageNum) {
+            workers.push(scrapeWorker(pageNum));
+        }
+    }
+
+    let currentTask = 0;
+    while (pageNumbers.length > 0) {
+        await workers[currentTask];
+        const pageNum = pageNumbers.shift();
+        if (pageNum) {
+            workers[currentTask] = scrapeWorker(pageNum);
+        }
+        currentTask = (currentTask + 1) % CONCURRENT_PAGES;
+    }
+
+    await Promise.all(workers);
+
 
     await browser.close();
     console.log('--- Browser closed ---');
