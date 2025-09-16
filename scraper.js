@@ -6,10 +6,10 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
 const FIRST_PAGE = 1;
-const LAST_PAGE = 20; // do not go greater than 400
+const LAST_PAGE = 100; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
-const CONCURRENT_PAGES = 3;
-const PAGE_TIMEOUT = 10; // seconds we wait for page to load
+const CONCURRENT_PAGES = 10;
+const PAGE_TIMEOUT = 5; // seconds we wait for page to load
 
 if (SAVE_HTML_PAGES === false) {
     console.warn('WARNING: SAVE_HTML_PAGES is set to false. Raw HTML pages will not be saved.');
