@@ -5,15 +5,21 @@
   "main": "index.js",
   "scripts": {
     "start": "node scraper.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "db:save": "node save-to-db.js",
+    "prisma:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^6.16.1",
     "axios": "^1.12.1",
     "cheerio": "^1.1.2",
     "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.16.1"
   }
 }

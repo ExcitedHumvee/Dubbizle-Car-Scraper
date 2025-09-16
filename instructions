@@ -1,2 +1,6 @@
-in the summary of scraper.js say how many pages were unsuccessful, and list the pages
-if a page had an error, mandatorily save the html
+i want to start saving all the cars data to the DB, suggest schemas (checkout unprocessed folder), note that incase there is an update to the car, i want to see the past information of the car
+it needs to be prisma and sqlite
+dont forget to add scripts to package.json
+there should be another js script to do the DB saving
+    it should process files in unprocessed folder one by one. after processing the file, it should be moved into the processed folder
+    after processing the file, it should give a summary at the end: count of new cars added, updated etc.
