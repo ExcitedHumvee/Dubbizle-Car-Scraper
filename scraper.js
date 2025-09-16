@@ -8,7 +8,7 @@ const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
 const FIRST_PAGE = 1;
 const LAST_PAGE = 20; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
-const CONCURRENT_PAGES = 2;
+const CONCURRENT_PAGES = 3;
 const PAGE_TIMEOUT = 10; // seconds we wait for page to load
 
 if (SAVE_HTML_PAGES === false) {
@@ -148,11 +148,28 @@ async function scrapePage(browser, pageNum) {
     } catch (error) {
         console.error(`An error occurred on page ${pageNum}:`, error.message);
 
-        // *** SAVE ERROR SCREENSHOT WITH TIMESTAMP ***
         const timestamp = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
-        const errorScreenshotPath = path.join(errorsDir, `error_page_${pageNum}_${timestamp}.png`);
-        await page.screenshot({ path: errorScreenshotPath });
-        console.log(`Error screenshot saved to: ${errorScreenshotPath}`);
+        const errorFileName = `error_page_${pageNum}_${timestamp}`;
+
+        // *** SAVE ERROR HTML ***
+        const errorHtmlPath = path.join(htmlDir, `${errorFileName}.html`);
+        try {
+            const html = await page.content();
+            fs.writeFileSync(errorHtmlPath, html);
+            console.log(`Error HTML saved to: ${errorHtmlPath}`);
+        } catch (htmlError) {
+            console.error(`Could not save error HTML for page ${pageNum}:`, htmlError.message);
+        }
+
+        // *** SAVE ERROR SCREENSHOT ***
+        const errorScreenshotPath = path.join(errorsDir, `${errorFileName}.png`);
+        try {
+            await page.screenshot({ path: errorScreenshotPath });
+            console.log(`Error screenshot saved to: ${errorScreenshotPath}`);
+        } catch (screenshotError) {
+            console.error(`Could not save error screenshot for page ${pageNum}:`, screenshotError.message);
+        }
+
         return { success: false, url: url };
     } finally {
         await page.close();

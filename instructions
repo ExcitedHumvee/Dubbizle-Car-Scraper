@@ -1,4 +1,1 @@
-when saving unprocessed files in node scraper.js, add the car count at the end of the file name
-in the summary of scraper.js say how many pages were successful, unsuccessful, and list these unsuccessful pages
-
-when calling npm run db:save, sometimes files are so big, and nothing gets printed to console, atleast print to the console every time 500 cars are processed, and also print remaining number of cars to be processed in current file, also print in the beginning how many records are found in the file to be processed
+if a page had an error, mandatorily save the html, even if SAVE_HTML_PAGES is set to false, this html file name should be the same name as error page
