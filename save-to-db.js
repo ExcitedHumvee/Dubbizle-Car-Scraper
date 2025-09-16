@@ -24,6 +24,7 @@ async function main() {
 
       let newCars = 0;
       let updatedCars = 0;
+      let alreadyPresentCars = 0;
       let processedCount = 0;
 
       for (const carData of cars) {
@@ -56,13 +57,14 @@ async function main() {
                 mileage: carPayload.mileage,
               },
             });
+            await prisma.car.update({
+              where: { listingId },
+              data: carPayload,
+            });
+            updatedCars++;
+          } else {
+            alreadyPresentCars++;
           }
-
-          await prisma.car.update({
-            where: { listingId },
-            data: carPayload,
-          });
-          updatedCars++;
         } else {
           // New car, create it
           await prisma.car.create({
@@ -98,6 +100,7 @@ async function main() {
       console.log(`Finished processing ${file}:`);
       console.log(`  - Added: ${newCars} new cars`);
       console.log(`  - Updated: ${updatedCars} existing cars`);
+      console.log(`  - Already present in DB: ${alreadyPresentCars} existing cars`);
     }
   } catch (error) {
     console.error('An error occurred:', error);

@@ -17,7 +17,13 @@ function parseHtmlFile(filePath) {
             console.warn(`Could not find __NEXT_DATA__ in ${path.basename(filePath)}. Skipping file.`);
             return;
         }
-        const nextData = JSON.parse(nextDataRaw);
+        let nextData;
+        try {
+            nextData = JSON.parse(nextDataRaw);
+        } catch (error) {
+            console.error(`Error parsing JSON in ${path.basename(filePath)}:`, error.message);
+            return;
+        }
         const listingsAction = nextData.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled');
         const listings = listingsAction ? listingsAction.payload.hits : [];
 
@@ -83,7 +89,7 @@ function parseHtmlFile(filePath) {
             });
         });
     } catch (error) {
-        console.error(`Error parsing ${path.basename(filePath)}:`, error.message);
+        console.error(`Error processing ${path.basename(filePath)}:`, error.message);
     }
 }
 
@@ -101,7 +107,7 @@ function processHtmlFiles() {
         });
 
         console.log('\n--- Final Scraped Data ---');
-        console.log(JSON.stringify(allCars, null, 2));
+        // console.log(JSON.stringify(allCars, null, 2));
         console.log(`\nTotal cars scraped: ${allCars.length}`);
     });
 }

@@ -43,7 +43,7 @@ async function scrapePage(browser, pageNum) {
 
     try {
         // console.log('>>> ACTION REQUIRED: If a CAPTCHA appears, please solve it in the browser window.');
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
+        await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
 
         // console.log('Page loaded. Looking for pop-ups and listings...');
 
@@ -156,7 +156,7 @@ async function scrapePage(browser, pageNum) {
         try {
             const html = await page.content();
             fs.writeFileSync(errorHtmlPath, html);
-            console.log(`Error HTML saved to: ${errorHtmlPath}`);
+            console.error(`Error HTML saved to: ${errorHtmlPath}`);
         } catch (htmlError) {
             console.error(`Could not save error HTML for page ${pageNum}:`, htmlError.message);
         }
@@ -165,7 +165,7 @@ async function scrapePage(browser, pageNum) {
         const errorScreenshotPath = path.join(errorsDir, `${errorFileName}.png`);
         try {
             await page.screenshot({ path: errorScreenshotPath });
-            console.log(`Error screenshot saved to: ${errorScreenshotPath}`);
+            console.error(`Error screenshot saved to: ${errorScreenshotPath}`);
         } catch (screenshotError) {
             console.error(`Could not save error screenshot for page ${pageNum}:`, screenshotError.message);
         }
@@ -223,8 +223,6 @@ async function scrapeCars() {
     console.log(`Total run time: ${runTime} seconds`);
     console.log(`Scraped data saved to: ${outputFilePath}`);
 }
-
-
 
 
 scrapeCars();
