@@ -6,9 +6,9 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
 const FIRST_PAGE = 1;
-const LAST_PAGE = 4; // do not go greater than 400
+const LAST_PAGE = 20; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
-const CONCURRENT_PAGES = 1;
+const CONCURRENT_PAGES = 2;
 const PAGE_TIMEOUT = 10; // seconds we wait for page to load
 
 if (SAVE_HTML_PAGES === false) {
@@ -36,18 +36,16 @@ if (!fs.existsSync(processedDir)) {
 
 async function scrapePage(browser, pageNum) {
     const url = `${BASE_URL}?page=${pageNum}`;
-    console.log(`
---- Scraping Page ${pageNum} ---
-`);
+    // console.log(`--- Scraping Page ${pageNum} ---`);
     console.log(`Navigating to: ${url}`);
     const page = await browser.newPage();
     const carsOnPage = [];
 
     try {
-        console.log('>>> ACTION REQUIRED: If a CAPTCHA appears, please solve it in the browser window.');
+        // console.log('>>> ACTION REQUIRED: If a CAPTCHA appears, please solve it in the browser window.');
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
 
-        console.log('Page loaded. Looking for pop-ups and listings...');
+        // console.log('Page loaded. Looking for pop-ups and listings...');
 
         // --- POP-UP HANDLING ---
         try {
@@ -69,7 +67,7 @@ async function scrapePage(browser, pageNum) {
         // --- MAIN SCRAPING LOGIC ---
         const LISTING_CARD_SELECTOR = 'a[data-testid^="listing-"]';
         await page.waitForSelector(LISTING_CARD_SELECTOR, { timeout: 1000 * PAGE_TIMEOUT });
-        console.log('Listings found. Extracting data...');
+        // console.log('Listings found. Extracting data...');
 
         const html = await page.content();
 
@@ -82,7 +80,7 @@ async function scrapePage(browser, pageNum) {
 
         const $ = cheerio.load(html);
 
-        const nextData = JSON.parse($('#__NEXT_DATA__').html());
+        const nextData = JSON.parse($('body').find('#__NEXT_DATA__').html());
         const listingsAction = nextData.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled');
         const listings = listingsAction ? listingsAction.payload.hits : [];
 
@@ -146,7 +144,7 @@ async function scrapePage(browser, pageNum) {
                 added: listing.added ? new Date(listing.added * 1000).toISOString() : null,
             });
         });
-
+        return { success: true, cars: carsOnPage };
     } catch (error) {
         console.error(`An error occurred on page ${pageNum}:`, error.message);
 
@@ -155,10 +153,10 @@ async function scrapePage(browser, pageNum) {
         const errorScreenshotPath = path.join(errorsDir, `error_page_${pageNum}_${timestamp}.png`);
         await page.screenshot({ path: errorScreenshotPath });
         console.log(`Error screenshot saved to: ${errorScreenshotPath}`);
+        return { success: false, url: url };
     } finally {
         await page.close();
     }
-    return carsOnPage;
 }
 
 async function scrapeCars() {
@@ -166,6 +164,9 @@ async function scrapeCars() {
     console.log('--- Launching browser ---');
     const browser = await chromium.launch({ headless: false });
     const allCars = [];
+    let successfulPages = 0;
+    let unsuccessfulPages = 0;
+    const unsuccessfulPageUrls = [];
 
     for (let i = FIRST_PAGE; i <= LAST_PAGE; i += CONCURRENT_PAGES) {
         const promises = [];
@@ -173,23 +174,40 @@ async function scrapeCars() {
             promises.push(scrapePage(browser, i + j));
         }
         const results = await Promise.all(promises);
-        results.forEach(result => allCars.push(...result));
+        results.forEach(result => {
+            if (result.success) {
+                allCars.push(...result.cars);
+                successfulPages++;
+            } else {
+                unsuccessfulPages++;
+                unsuccessfulPageUrls.push(result.url);
+            }
+        });
     }
 
     await browser.close();
-    console.log('\n--- Browser closed ---');
+    console.log('--- Browser closed ---');
 
     const endTime = new Date();
     const runTime = (endTime - startTime) / 1000;
     const completionDate = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
-    const outputFilePath = path.join(unprocessedDir, `${completionDate}.json`);
+    const outputFilePath = path.join(unprocessedDir, `${completionDate}-${allCars.length}.json`);
 
     fs.writeFileSync(outputFilePath, JSON.stringify(allCars, null, 2));
 
-    console.log('\n--- Scraping Summary ---');
+    console.log('--- Scraping Summary ---');
     console.log(`Total cars scraped: ${allCars.length}`);
+    console.log(`Successful pages: ${successfulPages}`);
+    console.log(`Unsuccessful pages: ${unsuccessfulPages}`);
+    if (unsuccessfulPages > 0) {
+        console.log('Unsuccessful page URLs:');
+        unsuccessfulPageUrls.forEach(url => console.log(`- ${url}`));
+    }
     console.log(`Total run time: ${runTime} seconds`);
     console.log(`Scraped data saved to: ${outputFilePath}`);
 }
+
+
+
 
 scrapeCars();

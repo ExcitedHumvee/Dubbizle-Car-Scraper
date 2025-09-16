@@ -18,11 +18,16 @@ async function main() {
       const filePath = path.join(unprocessedDir, file);
       const fileContent = await fs.readFile(filePath, 'utf-8');
       const cars = JSON.parse(fileContent);
+      const totalCars = cars.length;
+
+      console.log(`\nProcessing ${file}, found ${totalCars} records.`);
 
       let newCars = 0;
       let updatedCars = 0;
+      let processedCount = 0;
 
       for (const carData of cars) {
+        processedCount++;
         const { listingId, badges, extras, technicalFeatures, ...carInfo } = carData;
 
         if (!listingId) continue;
@@ -80,13 +85,17 @@ async function main() {
           });
           newCars++;
         }
+        
+        if (processedCount % 500 === 0) {
+            console.log(`  ... processed ${processedCount} of ${totalCars} cars. Remaining: ${totalCars - processedCount}`);
+        }
       }
 
       // Move the file to the processed directory
       const newFilePath = path.join(processedDir, file);
       await fs.rename(filePath, newFilePath);
 
-      console.log(`Processed ${file}:`);
+      console.log(`Finished processing ${file}:`);
       console.log(`  - Added: ${newCars} new cars`);
       console.log(`  - Updated: ${updatedCars} existing cars`);
     }
