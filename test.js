@@ -1,3 +1,4 @@
+// This test script processes saved HTML files in the 'html_files' directory, it will never scrape live data.
 const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
@@ -10,71 +11,80 @@ function parseHtmlFile(filePath) {
     const html = fs.readFileSync(filePath, 'utf-8');
     const $ = cheerio.load(html);
 
-    const nextData = JSON.parse($('#__NEXT_DATA__').html());
-    const listingsAction = nextData.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled');
-    const listings = listingsAction ? listingsAction.payload.hits : [];
+    try {
+        const nextDataRaw = $('body').find('#__NEXT_DATA__').html();
+        if (!nextDataRaw) {
+            console.warn(`Could not find __NEXT_DATA__ in ${path.basename(filePath)}. Skipping file.`);
+            return;
+        }
+        const nextData = JSON.parse(nextDataRaw);
+        const listingsAction = nextData.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled');
+        const listings = listingsAction ? listingsAction.payload.hits : [];
 
-    const listingMap = listings.reduce((acc, listing) => {
-        acc[listing.uuid] = listing;
-        return acc;
-    }, {});
+        const listingMap = listings.reduce((acc, listing) => {
+            acc[listing.uuid] = listing;
+            return acc;
+        }, {});
 
-    const LISTING_CARD_SELECTOR = 'a[data-testid^="listing-"]';
-    const carListings = $(LISTING_CARD_SELECTOR);
-    console.log(`Found ${carListings.length} car listings.`);
+        const LISTING_CARD_SELECTOR = 'a[data-testid^="listing-"]';
+        const carListings = $(LISTING_CARD_SELECTOR);
+        console.log(`Found ${carListings.length} car listings.`);
 
-    carListings.each((index, element) => {
-        const card = $(element);
+        carListings.each((index, element) => {
+            const card = $(element);
 
-        const titleParts = [];
-        card.find('[data-testid^="heading-text-"]').each((i, el) => {
-            titleParts.push($(el).text().trim());
+            const titleParts = [];
+            card.find('[data-testid^="heading-text-"]').each((i, el) => {
+                titleParts.push($(el).text().trim());
+            });
+            const title = titleParts.join(' ');
+
+            const detailPageUrl = card.attr('href');
+            const listingIdMatch = detailPageUrl ? detailPageUrl.match(/---([a-z0-9]+)/) : null;
+            const uuid = listingIdMatch ? listingIdMatch[1] : null;
+            const listing = listingMap[uuid] || {};
+            const details = listing.details || {};
+
+            allCars.push({
+                listingId: uuid,
+                detailPageUrl: detailPageUrl ? `https://dubai.dubizzle.com${detailPageUrl}` : null,
+                title: title,
+                price: listing.price || null,
+                sellerType: details['Seller type']?.en.value || null,
+                isNegotiable: card.text().toLowerCase().includes('negotiable'),
+                thumbnailUrl: card.find('img').attr('src'),
+                year: parseInt(card.find('[data-testid="listing-year"]').text().trim(), 10) || null,
+                mileage: parseInt(card.find('[data-testid="listing-kms"]').text().trim().replace(/,/g, ''), 10) || null,
+                location: card.find('.mui-style-t0mppt').text().trim(),
+                badges: card.find('[data-testid*="-badge"]').map((i, el) => $(el).text().trim().replace('undefined', '')).get(),
+                interiorColor: details['Interior Color']?.en.value || null,
+                horsepower: details['Horsepower']?.en.value || null,
+                exteriorColor: details['Exterior Color']?.en.value || null,
+                doors: details['Doors']?.en.value || null,
+                bodyType: details['Body Type']?.en.value || null,
+                seatingCapacity: details['Seating Capacity']?.en.value || null,
+                cylinders: details['No. of Cylinders']?.en.value || null,
+                transmissionType: details['Transmission Type']?.en.value || null,
+                engineCapacity: details['Engine Capacity (cc)']?.en.value || null,
+                extras: details['Extras']?.en.value || [],
+                technicalFeatures: details['Technical Features']?.en.value || [],
+                trim: details['Trim']?.en.value || null,
+                warranty: details['Warranty']?.en.value || null,
+                fuelType: details['Fuel Type']?.en.value || null,
+                vehicleReference: details['Vehicle Reference']?.en.value || null,
+                make: details['Make']?.en.value || null,
+                model: details['Model']?.en.value || null,
+                motorsTrim: details['Motors Trim']?.en.value || null,
+                createdAt: listing.created_at ? new Date(listing.created_at * 1000).toISOString() : null,
+                isVerifiedUser: listing.is_verified_user || null,
+                isPremium: listing.is_premium || null,
+                neighbourhood: listing.neighbourhood?.en || null,
+                added: listing.added ? new Date(listing.added * 1000).toISOString() : null,
+            });
         });
-        const title = titleParts.join(' ');
-
-        const detailPageUrl = card.attr('href');
-        const listingIdMatch = detailPageUrl ? detailPageUrl.match(/---([a-z0-9]+)/) : null;
-        const uuid = listingIdMatch ? listingIdMatch[1] : null;
-        const listing = listingMap[uuid] || {};
-        const details = listing.details || {};
-
-        allCars.push({
-            listingId: uuid,
-            detailPageUrl: detailPageUrl ? `https://dubai.dubizzle.com${detailPageUrl}` : null,
-            title: title,
-            price: listing.price || null,
-            sellerType: details['Seller type']?.en.value || null,
-            isNegotiable: card.text().toLowerCase().includes('negotiable'),
-            thumbnailUrl: card.find('img').attr('src'),
-            year: parseInt(card.find('[data-testid="listing-year"]').text().trim(), 10) || null,
-            mileage: parseInt(card.find('[data-testid="listing-kms"]').text().trim().replace(/,/g, ''), 10) || null,
-            location: card.find('.mui-style-t0mppt').text().trim(),
-            badges: card.find('[data-testid*="-badge"]').map((i, el) => $(el).text().trim().replace('undefined', '')).get(),
-            interiorColor: details['Interior Color']?.en.value || null,
-            horsepower: details['Horsepower']?.en.value || null,
-            exteriorColor: details['Exterior Color']?.en.value || null,
-            doors: details['Doors']?.en.value || null,
-            bodyType: details['Body Type']?.en.value || null,
-            seatingCapacity: details['Seating Capacity']?.en.value || null,
-            cylinders: details['No. of Cylinders']?.en.value || null,
-            transmissionType: details['Transmission Type']?.en.value || null,
-            engineCapacity: details['Engine Capacity (cc)']?.en.value || null,
-            extras: details['Extras']?.en.value || [],
-            technicalFeatures: details['Technical Features']?.en.value || [],
-            trim: details['Trim']?.en.value || null,
-            warranty: details['Warranty']?.en.value || null,
-            fuelType: details['Fuel Type']?.en.value || null,
-            vehicleReference: details['Vehicle Reference']?.en.value || null,
-            make: details['Make']?.en.value || null,
-            model: details['Model']?.en.value || null,
-            motorsTrim: details['Motors Trim']?.en.value || null,
-            createdAt: listing.created_at ? new Date(listing.created_at * 1000).toISOString() : null,
-            isVerifiedUser: listing.is_verified_user || null,
-            isPremium: listing.is_premium || null,
-            neighbourhood: listing.neighbourhood?.en || null,
-            added: listing.added ? new Date(listing.added * 1000).toISOString() : null,
-        });
-    });
+    } catch (error) {
+        console.error(`Error parsing ${path.basename(filePath)}:`, error.message);
+    }
 }
 
 function processHtmlFiles() {

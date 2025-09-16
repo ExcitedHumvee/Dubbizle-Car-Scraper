@@ -5,5 +5,5 @@
 *.log
 
 # Data files
-/html_files
+# /html_files
 /errors
