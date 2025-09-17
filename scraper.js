@@ -6,9 +6,9 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
 const FIRST_PAGE = 1;
-const LAST_PAGE = 5; // do not go greater than 400
+const LAST_PAGE = 50; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
-const CONCURRENT_PAGES = 1;
+const CONCURRENT_PAGES = 10;
 const TIMEOUT = 30; // seconds
 
 if (SAVE_HTML_PAGES === false) {
