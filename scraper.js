@@ -6,10 +6,10 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
 const FIRST_PAGE = 1;
-const LAST_PAGE = 400; // do not go greater than 400
+const LAST_PAGE = 5; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
-const CONCURRENT_PAGES = 10;
-const TIMEOUT = 30; // seconds
+const CONCURRENT_PAGES = 1;
+const TIMEOUT = 10; // seconds
 
 if (SAVE_HTML_PAGES === false) {
     console.warn('WARNING: SAVE_HTML_PAGES is set to false. Raw HTML pages will not be saved.');
@@ -37,10 +37,9 @@ if (!fs.existsSync(processedDir)) {
 async function scrapePage(browser, pageNum) {
     const url = `${BASE_URL}?page=${pageNum}`;
     console.log(`Navigating to: ${url}`);
-    let context;
+    let page;
     try {
-        context = await browser.newContext();
-        const page = await context.newPage();
+        page = await browser.newPage();
         const carsOnPage = [];
 
         await page.goto(url, { waitUntil: 'networkidle', timeout: TIMEOUT * 1000 });
@@ -69,7 +68,8 @@ async function scrapePage(browser, pageNum) {
         const html = await page.content();
 
         if (SAVE_HTML_PAGES) {
-            const htmlFilePath = path.join(htmlDir, `page_${pageNum}.html`);
+            const timestamp = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
+            const htmlFilePath = path.join(htmlDir, `${timestamp}_page_${pageNum}.html`);
             fs.writeFileSync(htmlFilePath, html);
             console.log(`Raw HTML for page ${pageNum} has been saved to: ${htmlFilePath}`);
         }
@@ -144,34 +144,33 @@ async function scrapePage(browser, pageNum) {
     } catch (error) {
         console.error(`An error occurred on page ${pageNum}:`, error.message);
         const timestamp = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
-        const errorFileName = `error_page_${pageNum}_${timestamp}`;
+        const errorFileName = `${timestamp}_error_page_${pageNum}`;
 
-        // *** SAVE ERROR HTML ***
-        const errorHtmlPath = path.join(htmlDir, `${errorFileName}.html`);
-        try {
-            const page = await browser.newPage();
-            const html = await page.content();
-            fs.writeFileSync(errorHtmlPath, html);
-            console.error(`Error HTML saved to: ${errorHtmlPath}`);
-        } catch (htmlError) {
-            console.error(`Could not save error HTML for page ${pageNum}:`, htmlError.message);
-        }
+        if (page) {
+            // *** SAVE ERROR HTML ***
+            const errorHtmlPath = path.join(errorsDir, `${errorFileName}.html`);
+            try {
+                const html = await page.content();
+                fs.writeFileSync(errorHtmlPath, html);
+                console.error(`Error HTML saved to: ${errorHtmlPath}`);
+            } catch (htmlError) {
+                console.error(`Could not save error HTML for page ${pageNum}:`, htmlError.message);
+            }
 
-        // *** SAVE ERROR SCREENSHOT ***
-        const errorScreenshotPath = path.join(errorsDir, `${errorFileName}.png`);
-        try {
-            const page = await browser.newPage();
-            await page.goto(url);
-            await page.screenshot({ path: errorScreenshotPath });
-            console.error(`Error screenshot saved to: ${errorScreenshotPath}`);
-        } catch (screenshotError) {
-            console.error(`Could not save error screenshot for page ${pageNum}:`, screenshotError.message);
+            // *** SAVE ERROR SCREENSHOT ***
+            const errorScreenshotPath = path.join(errorsDir, `${errorFileName}.png`);
+            try {
+                await page.screenshot({ path: errorScreenshotPath });
+                console.error(`Error screenshot saved to: ${errorScreenshotPath}`);
+            } catch (screenshotError) {
+                console.error(`Could not save error screenshot for page ${pageNum}:`, screenshotError.message);
+            }
         }
 
         return { success: false, url: url };
     } finally {
-        if (context) {
-            await context.close();
+        if (page) {
+            await page.close();
         }
     }
 }

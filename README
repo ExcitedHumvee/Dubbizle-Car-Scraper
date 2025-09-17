@@ -2,4 +2,4 @@ npm start
 npm test (wont call dubizzle servers)
 
 TODO:    
-    
+    when saving images and files in @scraper.js make sure to put the time before the page number in the file names
