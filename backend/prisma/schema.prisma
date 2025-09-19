@@ -1,0 +1,62 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Car {
+  listingId         String        @id
+  make              String?
+  model             String?
+  year              Int?
+  mileage           Int?
+  price             Int?
+  title             String?
+  isPremium         Boolean?
+  bodyType          String?
+  engineCapacity    String?
+  horsepower        String?
+  transmissionType  String?
+  cylinders         String?
+  interiorColor     String?
+  exteriorColor     String?
+  doors             String?
+  seatingCapacity   String?
+  trim              String?
+  warranty          String?
+  fuelType          String?
+  motorsTrim        String?
+  sellerType        String?
+  location          String?
+  neighbourhood     String?
+  detailPageUrl     String?
+  isNegotiable      Boolean?
+  thumbnailUrl      String?
+  vehicleReference  String?
+  isVerifiedUser    Boolean?
+  createdAt         DateTime?
+  added             DateTime?
+  last_updated      DateTime      @updatedAt
+  history           CarHistory[]
+  features          CarFeature[]
+}
+
+model CarHistory {
+  history_id  Int      @id @default(autoincrement())
+  car         Car?     @relation(fields: [listingId], references: [listingId])
+  listingId   String?
+  price       Int?
+  mileage     Int?
+  changed_at  DateTime @default(now())
+}
+
+model CarFeature {
+  feature_id   Int    @id @default(autoincrement())
+  car          Car    @relation(fields: [listingId], references: [listingId])
+  listingId    String
+  feature_type String // 'badge', 'extra', or 'technical'
+  feature_name String
+}
