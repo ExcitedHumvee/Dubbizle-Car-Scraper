@@ -1,4 +1,3 @@
-
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -10,35 +9,35 @@ generator client {
 
 model Car {
   listingId         String        @id
-  detailPageUrl     String?
-  title             String?
-  price             Int?
-  sellerType        String?
-  isNegotiable      Boolean?
-  thumbnailUrl      String?
+  make              String?
+  model             String?
   year              Int?
   mileage           Int?
-  location          String?
-  interiorColor     String?
+  price             Int?
+  title             String?
+  isPremium         Boolean?
+  bodyType          String?
+  engineCapacity    String?
   horsepower        String?
+  transmissionType  String?
+  cylinders         String?
+  interiorColor     String?
   exteriorColor     String?
   doors             String?
-  bodyType          String?
   seatingCapacity   String?
-  cylinders         String?
-  transmissionType  String?
-  engineCapacity    String?
   trim              String?
   warranty          String?
   fuelType          String?
-  vehicleReference  String?
-  make              String?
-  model             String?
   motorsTrim        String?
-  createdAt         DateTime?
-  isVerifiedUser    Boolean?
-  isPremium         Boolean?
+  sellerType        String?
+  location          String?
   neighbourhood     String?
+  detailPageUrl     String?
+  isNegotiable      Boolean?
+  thumbnailUrl      String?
+  vehicleReference  String?
+  isVerifiedUser    Boolean?
+  createdAt         DateTime?
   added             DateTime?
   last_updated      DateTime      @updatedAt
   history           CarHistory[]
@@ -47,8 +46,8 @@ model Car {
 
 model CarHistory {
   history_id  Int      @id @default(autoincrement())
-  car         Car      @relation(fields: [listingId], references: [listingId])
-  listingId   String
+  car         Car?     @relation(fields: [listingId], references: [listingId])
+  listingId   String?
   price       Int?
   mileage     Int?
   changed_at  DateTime @default(now())

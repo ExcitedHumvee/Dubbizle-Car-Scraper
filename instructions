@@ -1,0 +1,33 @@
+Message: Error in Prisma Client request: 
+
+
+Invalid `STUDIO_EMBED_BUILD<"u"&&STUDIO_EMBED_BUILD?z$e():require(`${l.prismaClient}/runtime/${c}`),F=r,$=(0,KV.createHash)("sha256").update()` invocation in
+/Users/stanydesa/Desktop/Dubbizle Car Scraper Simple/node_modules/prisma/build/index.js:4813:10635
+
+  4810       }
+  4811     }
+  4812   }
+→ 4813 `}}),i=n.workspaces.find(a=>a.isDefault);if(!i)throw new Error("No default workspace found");return i};var uMe=require("@prisma/engines");var BPe=require("buffer");function jPe(r,e,n,i){Object.defineProperty(r,e,{get:n,set:i,enumerable:!0,configurable:!0})}var LPe={};jPe(LPe,"serializeRPCMessage",()=>HG);jPe(LPe,"deserializeRPCMessage",()=>zG);var WG="PrismaBigInt::",VG="PrismaBytes::";function HG(r){return JSON.stringify(r,(e,n)=>typeof n=="bigint"?WG+n:n?.type==="Buffer"&&Array.isArray(n?.data)?VG+BPe.Buffer.from(n.data).toString("base64"):n)}function zG(r){return JSON.parse(r,(e,n)=>typeof n=="string"&&n.startsWith(WG)?BigInt(n.substr(WG.length)):typeof n=="string"&&n.startsWith(VG)?n.substr(VG.length):n)}var eMe=G(zPe()),V6=G(t6e()),tMe=G(require("http")),rMe=G(i6e()),nMe=require("zlib");var sm=require("path");var KV=require("crypto"),J$e=require("fs/promises"),Y$e=G(YW());function HV(r,e,n,i){Object.defineProperty(r,e,{get:n,set:i,enumerable:!0,configurable:!0})}var Q$e=globalThis,WV={},W6={},Ag=Q$e.parcelRequire94c2;Ag==null&&(Ag=function(r){if(r in WV)return WV[r].exports;if(r in W6){var e=W6[r];delete W6[r];var n={id:r,exports:{}};return WV[r]=n,e.call(n.exports,n,n.exports),n.exports}var i=new Error("Cannot find module '"+r+"'");throw i.code="MODULE_NOT_FOUND",i},Ag.register=function(e,n){W6[e]=n},Q$e.parcelRequire94c2=Ag);var Z$e=Ag.register;Z$e("9lTzd",function(module,exports){HV(module.exports,"guessEnginePaths",()=>guessEnginePaths),HV(module.exports,"guessPrismaClientPath",()=>guessPrismaClientPath);var $5COlq=Ag("5COlq");async function guessEnginePaths({forceBinary,forceLibrary,resolveOverrides}){let queryEngineName,queryEngineType;if(forceLibrary?(queryEngineName=await(0,$5COlq.prismaEngineName)("query-engine","library"),queryEngineType="library"):forceBinary?(queryEngineName=await(0,$5COlq.prismaEngineName)("query-engine","binary"),queryEngineType="binary"):(queryEngineName=void 0,queryEngineType=void 0),!queryEngineName||!queryEngineType)return{queryEngine:void 0};let queryEnginePath;if(resolveOverrides[".prisma/client"])queryEnginePath=(0,sm.resolve)(resolveOverrides[".prisma/client"],`../${queryEngineName}`);else if(resolveOverrides["@prisma/engines"])queryEnginePath=(0,sm.resolve)(resolveOverrides["@prisma/engines"],`../../${queryEngineName}`);else{let atPrismaEnginesPath;try{atPrismaEnginesPath=eval("require.resolve('@prisma/engines')")}catch(r){throw new Error("Unable to resolve Prisma engine paths. This is a bug.")}queryEnginePath=(0,sm.resolve)(atPrismaEnginesPath`../../${queryEngineName}`)}return{queryEngine:{type:queryEngineType,path:queryEnginePath}}}function guessPrismaClientPath({resolveOverrides}){let prismaClientPath=resolveOverrides["@prisma/client"]||eval("require.resolve('@prisma/client')");return(0,sm.resolve)(prismaClientPath,"../")}});Z$e("5COlq",function(r,e){HV(r.exports,"prismaEngineName",()=>n);async function n(i,a){let o=await Ni(),u=o==="windows"?".exe":"";if(a==="library")return ha(o,"fs");if(a==="binary")return`${i}-${o}${u}`;throw new Error(`Unknown engine type: ${a}`)}});function ykt(r){return{models:VV(r.models),enums:VV(r.enums),types:VV(r.types)}}function VV(r){let e={};for(let{name:n,...i}of r)e[n]=i;return e}var xD=(0,Y$e.debug)("prisma:studio-pcw"),vkt=/^\s*datasource\s+([^\s]+)\s*{/m,xkt=/url *= *env\("(.*)"\)/,bkt=/url *= *"(.*)"/;async function wkt({schema:r,schemaPath:e,dmmf:n,adapter:i,datasourceProvider:a,previewFeatures:o,datasources:u,engineType:c,paths:l,directUrl:p,versions:f}){let g=r.match(vkt)?.[1]??"",v=r.match(xkt)?.[1]??null,x=r.match(bkt)?.[1]??null,{getPrismaClient:b,PrismaClientKnownRequestError:E,PrismaClientRustPanicError:_,PrismaClientInitializationError:C,PrismaClientValidationError:A}=typeof STUDIO_EMBED_BUILD<"u"&&STUDIO_EMBED_BUILD?z$e():require(`${l.prismaClient}/runtime/${c}`),F=r,$=(0,KV.createHash)("sha256").update(
+Inconsistent query result: Field car is required to return data, got `null` instead.
+  
+Query:
+{
+  "modelName": "CarHistory",
+  "operation": "findMany",
+  "args": {
+    "where": {
+      "AND": []
+    },
+    "take": 100,
+    "skip": 0,
+    "select": {
+      "history_id": true,
+      "car": true,
+      "listingId": true,
+      "price": true,
+      "mileage": true,
+      "changed_at": true
+    }
+  }
+}
+  

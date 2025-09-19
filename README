@@ -1,5 +1,6 @@
 npm start
 npm test (wont call dubizzle servers)
+npx prisma studio
 
 TODO:    
-    
+    gcc/ american specs
