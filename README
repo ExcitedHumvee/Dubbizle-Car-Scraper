@@ -1,6 +1,9 @@
-npm start
-npm test (wont call dubizzle servers)
-npx prisma studio
+cd backend    
+    npm run scrape
+    npm run test:scrape (wont call dubizzle servers)
+    npx prisma studio
+
+    npm run start:dev
 
 TODO:    
     gcc/ american specs
