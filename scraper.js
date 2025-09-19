@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 const cheerio = require('cheerio');
 const fs = require('fs'); // File System module for writing files
-const path = require('path'); // Path module for creating file paths
+const path = require('path'); // Path module for creating file paths 
 
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
