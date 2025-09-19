@@ -1,3 +1,4 @@
+gemini -m gemini-2.5-flash
 cd backend    
     npm run scrape
     npm run test:scrape (wont call dubizzle servers)
