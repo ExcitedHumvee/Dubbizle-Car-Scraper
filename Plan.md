@@ -26,7 +26,7 @@ The backend will be responsible for providing a robust API for the frontend to c
 - **API Endpoints (`CarsController`):**
   - **`GET /api/cars`**:
     - Fetches a list of cars based on filter criteria.
-    - **Query Parameters:** `make`, `model`, `minYear`, `maxYear`, `minPrice`, `maxPrice`, `minMileage`, `maxMileage`.
+        - **Query Parameters:** `make`, `model`, `minYear`, `maxYear`, `minPrice`, `maxPrice`, `minMileage`, `maxMileage`, `isPremium`, `bodyType`, `engineCapacity`, `horsepower`, `transmissionType`, `cylinders`, `interiorColor`, `exteriorColor`, `doors`, `seatingCapacity`, `trim`, `warranty`, `fuelType`, `motorsTrim`, `sellerType`, `location`, `neighbourhood`.
   - **`GET /api/cars/meta`**:
     - Fetches metadata for populating filter dropdowns, such as a list of unique car makes and models.
   - **`GET /api/cars/:id`**:
