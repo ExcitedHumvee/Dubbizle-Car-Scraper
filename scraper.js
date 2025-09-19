@@ -6,9 +6,9 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/';
 const FIRST_PAGE = 1;
-const LAST_PAGE = 400; // do not go greater than 400
+const LAST_PAGE = 10; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
-const CONCURRENT_PAGES = 1;
+const CONCURRENT_PAGES = 5;
 const TIMEOUT = 30; // seconds
 
 if (SAVE_HTML_PAGES === false) {
@@ -18,14 +18,19 @@ if (SAVE_HTML_PAGES === false) {
 // --- Setup Directories ---
 const htmlDir = path.join(__dirname, 'html_files');
 const errorsDir = path.join(__dirname, 'errors');
+const errorHtmlDir = path.join(errorsDir, 'html');
+const errorScreenshotsDir = path.join(errorsDir, 'screenshots');
 const unprocessedDir = path.join(__dirname, 'unprocessed');
 const processedDir = path.join(__dirname, 'processed');
 
 if (!fs.existsSync(htmlDir)) {
     fs.mkdirSync(htmlDir, { recursive: true });
 }
-if (!fs.existsSync(errorsDir)) {
-    fs.mkdirSync(errorsDir, { recursive: true });
+if (!fs.existsSync(errorHtmlDir)) {
+    fs.mkdirSync(errorHtmlDir, { recursive: true });
+}
+if (!fs.existsSync(errorScreenshotsDir)) {
+    fs.mkdirSync(errorScreenshotsDir, { recursive: true });
 }
 if (!fs.existsSync(unprocessedDir)) {
     fs.mkdirSync(unprocessedDir, { recursive: true });
@@ -148,7 +153,7 @@ async function scrapePage(browser, pageNum) {
 
         if (page) {
             // *** SAVE ERROR HTML ***
-            const errorHtmlPath = path.join(errorsDir, `${errorFileName}.html`);
+            const errorHtmlPath = path.join(errorHtmlDir, `${errorFileName}.html`);
             try {
                 const html = await page.content();
                 fs.writeFileSync(errorHtmlPath, html);
@@ -158,7 +163,7 @@ async function scrapePage(browser, pageNum) {
             }
 
             // *** SAVE ERROR SCREENSHOT ***
-            const errorScreenshotPath = path.join(errorsDir, `${errorFileName}.png`);
+            const errorScreenshotPath = path.join(errorScreenshotsDir, `${errorFileName}.png`);
             try {
                 await page.screenshot({ path: errorScreenshotPath });
                 console.error(`Error screenshot saved to: ${errorScreenshotPath}`);
