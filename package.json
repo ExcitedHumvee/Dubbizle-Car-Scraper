@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node scraper.js",
-    "test": "node test.js",
-    "db:save": "node save-to-db.js",
+    "start": "node Scraper/scraper.js",
+    "test": "node Scraper/test.js",
+    "db:save": "node Scraper/save-to-db.js",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev"
   },
