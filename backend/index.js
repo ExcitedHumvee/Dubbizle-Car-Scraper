@@ -188,8 +188,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *         schema:
  *           type: integer
  *           minimum: 1
- *           maximum: 100
- *         description: Number of items to take for pagination (default 20, max 100)
+ *         description: Number of items to take for pagination (default 1000)
  *     responses:
  *       200:
  *         description: A list of cars matching the criteria.
@@ -249,7 +248,7 @@ app.get('/api/cars', async (req, res) => {
     if (neighbourhood) where.neighbourhood = neighbourhood;
 
     const parsedSkip = skip ? parseInt(skip) : 0;
-    const parsedTake = take ? Math.min(parseInt(take), 100) : 20; // Default to 20, max 100
+    const parsedTake = take ? parseInt(take) : 1000; // Default to 1000
 
     const cars = await prisma.car.findMany({
       where,
