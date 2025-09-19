@@ -10,6 +10,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Swagger definition
 const swaggerOptions = {
   swaggerDefinition: {
@@ -43,7 +49,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  * @swagger
  * /api/cars:
  *   get:
- *     summary: Retrieve a list of cars with optional filtering
+ *     summary: Retrieve a list of cars with optional filtering and pagination
  *     tags: [Cars]
  *     parameters:
  *       - in: query
@@ -171,6 +177,19 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *         schema:
  *           type: string
  *         description: Filter by neighbourhood
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: Number of items to skip for pagination
+ *       - in: query
+ *         name: take
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Number of items to take for pagination (default 20, max 100)
  *     responses:
  *       200:
  *         description: A list of cars matching the criteria.
@@ -198,7 +217,7 @@ app.get('/api/cars', async (req, res) => {
       make, model, minYear, maxYear, minPrice, maxPrice, minMileage, maxMileage,
       isPremium, bodyType, engineCapacity, horsepower, transmissionType, cylinders,
       interiorColor, exteriorColor, doors, seatingCapacity, trim, warranty, fuelType,
-      motorsTrim, sellerType, location, neighbourhood
+      motorsTrim, sellerType, location, neighbourhood, skip, take
     } = req.query;
 
     const where = {};
@@ -229,8 +248,13 @@ app.get('/api/cars', async (req, res) => {
     if (location) where.location = location;
     if (neighbourhood) where.neighbourhood = neighbourhood;
 
+    const parsedSkip = skip ? parseInt(skip) : 0;
+    const parsedTake = take ? Math.min(parseInt(take), 100) : 20; // Default to 20, max 100
+
     const cars = await prisma.car.findMany({
       where,
+      skip: parsedSkip,
+      take: parsedTake,
     });
     res.json(cars);
   } catch (error) {

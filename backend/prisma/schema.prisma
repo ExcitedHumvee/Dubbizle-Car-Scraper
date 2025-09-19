@@ -42,6 +42,16 @@ model Car {
   last_updated      DateTime      @updatedAt
   history           CarHistory[]
   features          CarFeature[]
+
+  @@index([make])
+  @@index([model])
+  @@index([year])
+  @@index([mileage])
+  @@index([price])
+  @@index([bodyType])
+  @@index([transmissionType])
+  @@index([fuelType])
+  @@index([location])
 }
 
 model CarHistory {
