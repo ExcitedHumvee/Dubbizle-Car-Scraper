@@ -1,2 +1,0 @@
-read @Plan.md and just implement the backend part for now. dont use nestJS just use simple nodejs script, but is it still possible to implement swaggger?
-after implementing, test out the apis
