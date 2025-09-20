@@ -97,6 +97,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *         schema:
  *           type: boolean
  *         description: Filter by premium status
+ *      - in: query
+ *         name: spec
+ *         schema:
+ *           type: string
+ *         description: Filter by spec
  *       - in: query
  *         name: bodyType
  *         schema:
@@ -214,7 +219,7 @@ app.get('/api/cars', async (req, res) => {
   try {
     const {
       make, model, minYear, maxYear, minPrice, maxPrice, minMileage, maxMileage,
-      isPremium, bodyType, engineCapacity, horsepower, transmissionType, cylinders,
+      isPremium, spec, bodyType, engineCapacity, horsepower, transmissionType, cylinders,
       interiorColor, exteriorColor, doors, seatingCapacity, trim, warranty, fuelType,
       motorsTrim, sellerType, location, neighbourhood, skip, take
     } = req.query;
@@ -230,6 +235,7 @@ app.get('/api/cars', async (req, res) => {
     if (minMileage) where.mileage = { gte: parseFloat(minMileage) };
     if (maxMileage) where.mileage = { ...(where.mileage || {}), lte: parseFloat(maxMileage) };
     if (isPremium !== undefined) where.isPremium = isPremium === 'true';
+    if (spec) where.spec = spec;
     if (bodyType) where.bodyType = bodyType;
     if (engineCapacity) where.engineCapacity = { gte: parseFloat(engineCapacity) };
     if (horsepower) where.horsepower = { gte: parseFloat(horsepower) };
