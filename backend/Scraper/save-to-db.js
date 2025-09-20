@@ -11,10 +11,15 @@ async function main() {
 
   try {
     await fs.mkdir(processedDir, { recursive: true });
-    const files = await fs.readdir(unprocessedDir);
+    const files = (await fs.readdir(unprocessedDir))
+      .filter(file => path.extname(file) === '.json')
+      .sort((a, b) => {
+        const timestampA = new Date(a.split('T')[0]);
+        const timestampB = new Date(b.split('T')[0]);
+        return timestampA.getTime() - timestampB.getTime();
+      });
 
     for (const file of files) {
-      if (path.extname(file) !== '.json') continue;
 
       const filePath = path.join(unprocessedDir, file);
       const fileContent = await fs.readFile(filePath, 'utf-8');

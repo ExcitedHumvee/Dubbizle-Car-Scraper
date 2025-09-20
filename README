@@ -9,4 +9,3 @@ cd backend
 TODO:   
     for save to db, it should process files from oldest to newest(date in filename)
     backend server cache
-    gcc/ american specs
