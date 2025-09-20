@@ -10,6 +10,7 @@
     "db:save": "node scraper/save-to-db.js && node scraper/countCars.js",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "test:api": "node test_api.js",
     "studio": "npx prisma studio"
   },
   "keywords": [],
