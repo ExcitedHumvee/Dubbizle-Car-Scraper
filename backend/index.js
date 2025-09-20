@@ -219,52 +219,83 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 app.get('/api/cars', async (req, res) => {
   try {
+    const parsedSkip = req.query.skip ? parseInt(req.query.skip) : 0;
+    const parsedTake = req.query.take ? parseInt(req.query.take) : 10000000; // Default to 10,000,000
+
     const {
       make, model, minYear, maxYear, minPrice, maxPrice, minMileage, maxMileage,
       isPremium, spec, bodyType, engineCapacity, horsepower, transmissionType, cylinders,
       interiorColor, exteriorColor, doors, seatingCapacity, trim, warranty, fuelType,
-      motorsTrim, sellerType, location, neighbourhood, skip, take
+      motorsTrim, sellerType, location, neighbourhood
     } = req.query;
 
-    const where = {};
+    const hasFilters = Object.keys(req.query).some(key => 
+      key !== 'skip' && key !== 'take' && req.query[key] !== undefined
+    );
 
-    if (make) where.make = make;
-    if (model) where.model = model;
-    if (minYear) where.year = { gte: parseInt(minYear) };
-    if (maxYear) where.year = { ...(where.year || {}), lte: parseInt(maxYear) };
-    if (minPrice) where.price = { gte: parseFloat(minPrice) };
-    if (maxPrice) where.price = { ...(where.price || {}), lte: parseFloat(maxPrice) };
-    if (minMileage) where.mileage = { gte: parseFloat(minMileage) };
-    if (maxMileage) where.mileage = { ...(where.mileage || {}), lte: parseFloat(maxMileage) };
-    if (isPremium !== undefined) where.isPremium = isPremium === 'true';
-    if (spec) where.spec = spec;
-    if (bodyType) where.bodyType = bodyType;
-    if (engineCapacity) where.engineCapacity = { gte: parseFloat(engineCapacity) };
-    if (horsepower) where.horsepower = { gte: parseFloat(horsepower) };
-    if (transmissionType) where.transmissionType = transmissionType;
-    if (cylinders) where.cylinders = parseInt(cylinders);
-    if (interiorColor) where.interiorColor = interiorColor;
-    if (exteriorColor) where.exteriorColor = exteriorColor;
-    if (doors) where.doors = parseInt(doors);
-    if (seatingCapacity) where.seatingCapacity = parseInt(seatingCapacity);
-    if (trim) where.trim = trim;
-    if (warranty !== undefined) where.warranty = warranty === 'true';
-    if (fuelType) where.fuelType = fuelType;
-    if (motorsTrim) where.motorsTrim = motorsTrim;
-    if (sellerType) where.sellerType = sellerType;
-    if (location) where.location = location;
-    if (neighbourhood) where.neighbourhood = neighbourhood;
+    let cars;
 
-    const parsedSkip = skip ? parseInt(skip) : 0;
-    const parsedTake = take ? parseInt(take) : 10000000; // Default to 10,000,000
+    if (!hasFilters) {
+      // Try to retrieve from cache
+      const cachedData = await prisma.carCache.findFirst();
 
-    const cars = await prisma.car.findMany({
-      where,
-      skip: parsedSkip,
-      take: parsedTake,
-    });
-    console.log(`Fetched ${cars.length} cars from Prisma.`);
-    res.json(cars);
+      if (cachedData) {
+        cars = JSON.parse(cachedData.data);
+        console.log('Fetched cars from cache.');
+      } else {
+        // Fetch all cars and store in cache
+        cars = await prisma.car.findMany();
+        await prisma.carCache.upsert({
+          where: { id: 1 }, // Assuming a single cache entry
+          update: { data: JSON.stringify(cars) },
+          create: { data: JSON.stringify(cars) },
+        });
+        console.log('Fetched cars from DB and stored in cache.');
+        console.log('CarCache refreshed in index.js.');
+      }
+    } else {
+      // Apply filters if present
+      const where = {};
+
+      if (make) where.make = make;
+      if (model) where.model = model;
+      if (minYear) where.year = { gte: parseInt(minYear) };
+      if (maxYear) where.year = { ...(where.year || {}), lte: parseInt(maxYear) };
+      if (minPrice) where.price = { gte: parseFloat(minPrice) };
+      if (maxPrice) where.price = { ...(where.price || {}), lte: parseFloat(maxPrice) };
+      if (minMileage) where.mileage = { gte: parseFloat(minMileage) };
+      if (maxMileage) where.mileage = { ...(where.mileage || {}), lte: parseFloat(maxMileage) };
+      if (isPremium !== undefined) where.isPremium = isPremium === 'true';
+      if (spec) where.spec = spec;
+      if (bodyType) where.bodyType = bodyType;
+      if (engineCapacity) where.engineCapacity = { gte: parseFloat(engineCapacity) };
+      if (horsepower) where.horsepower = { gte: parseFloat(horsepower) };
+      if (transmissionType) where.transmissionType = transmissionType;
+      if (cylinders) where.cylinders = parseInt(cylinders);
+      if (interiorColor) where.interiorColor = interiorColor;
+      if (exteriorColor) where.exteriorColor = exteriorColor;
+      if (doors) where.doors = parseInt(doors);
+      if (seatingCapacity) where.seatingCapacity = parseInt(seatingCapacity);
+      if (trim) where.trim = trim;
+      if (warranty !== undefined) where.warranty = warranty === 'true';
+      if (fuelType) where.fuelType = fuelType;
+      if (motorsTrim) where.motorsTrim = motorsTrim;
+      if (sellerType) where.sellerType = sellerType;
+      if (location) where.location = location;
+      if (neighbourhood) where.neighbourhood = neighbourhood;
+
+      cars = await prisma.car.findMany({
+        where,
+        skip: parsedSkip,
+        take: parsedTake,
+      });
+      console.log(`Fetched ${cars.length} cars from Prisma.`);
+    }
+
+    // Apply skip and take to the final car list (whether from cache or DB)
+    const paginatedCars = cars.slice(parsedSkip, parsedSkip + parsedTake);
+
+    res.json(paginatedCars);
   } catch (error) {
     console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Internal server error' });

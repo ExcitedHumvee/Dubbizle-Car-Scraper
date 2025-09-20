@@ -55,6 +55,12 @@ model Car {
   @@index([location])
 }
 
+model CarCache {
+  id           Int      @id @default(autoincrement())
+  data         String
+  last_updated DateTime @updatedAt
+}
+
 model CarHistory {
   history_id  Int      @id @default(autoincrement())
   car         Car?     @relation(fields: [listingId], references: [listingId])
