@@ -3,14 +3,14 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const cors = require('cors');
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
-
-
 app.use(express.json());
+app.use(cors());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -337,9 +337,52 @@ app.get('/api/cars/meta', async (req, res) => {
       distinct: ['model'],
       where: { model: { not: null, not: '' } },
     });
+    const bodyTypes = await prisma.car.findMany({
+      select: { bodyType: true },
+      distinct: ['bodyType'],
+      where: { bodyType: { not: null, not: '' } },
+    });
+    const transmissionTypes = await prisma.car.findMany({
+      select: { transmissionType: true },
+      distinct: ['transmissionType'],
+      where: { transmissionType: { not: null, not: '' } },
+    });
+    const fuelTypes = await prisma.car.findMany({
+      select: { fuelType: true },
+      distinct: ['fuelType'],
+      where: { fuelType: { not: null, not: '' } },
+    });
+    const specs = await prisma.car.findMany({
+      select: { spec: true },
+      distinct: ['spec'],
+      where: { spec: { not: null, not: '' } },
+    });
+    const sellerTypes = await prisma.car.findMany({
+      select: { sellerType: true },
+      distinct: ['sellerType'],
+      where: { sellerType: { not: null, not: '' } },
+    });
+    const locations = await prisma.car.findMany({
+      select: { location: true },
+      distinct: ['location'],
+      where: { location: { not: null, not: '' } },
+    });
+    const neighbourhoods = await prisma.car.findMany({
+      select: { neighbourhood: true },
+      distinct: ['neighbourhood'],
+      where: { neighbourhood: { not: null, not: '' } },
+    });
+
     res.json({
       makes: makes.map((m) => m.make),
       models: models.map((m) => m.model),
+      bodyTypes: bodyTypes.map((b) => b.bodyType),
+      transmissionTypes: transmissionTypes.map((t) => t.transmissionType),
+      fuelTypes: fuelTypes.map((f) => f.fuelType),
+      specs: specs.map((s) => s.spec),
+      sellerTypes: sellerTypes.map((s) => s.sellerType),
+      locations: locations.map((l) => l.location),
+      neighbourhoods: neighbourhoods.map((n) => n.neighbourhood),
     });
   } catch (error) {
     console.error('Error fetching car metadata:', error);
