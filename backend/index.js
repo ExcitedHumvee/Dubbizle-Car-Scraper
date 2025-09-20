@@ -248,7 +248,7 @@ app.get('/api/cars', async (req, res) => {
     if (neighbourhood) where.neighbourhood = neighbourhood;
 
     const parsedSkip = skip ? parseInt(skip) : 0;
-    const parsedTake = take ? parseInt(take) : 1000; // Default to 1000
+    const parsedTake = take ? parseInt(take) : 10000000; // Default to 10,000,000
 
     const cars = await prisma.car.findMany({
       where,
@@ -366,15 +366,7 @@ app.get('/api/cars/:id', async (req, res) => {
   }
 });
 
-app.get('/api/cars', async (req, res) => {
-  try {
-    const cars = await prisma.car.findMany();
-    res.json(cars);
-  } catch (error) {
-    console.error('Error fetching cars:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
