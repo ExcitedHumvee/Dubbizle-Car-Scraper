@@ -6,7 +6,7 @@ cd backend
 
     npm start
 
-TODO:    
-    server not returning all cars
+TODO:   
+    after save to db, output how many cars in DB rn
     backend server cache
     gcc/ american specs

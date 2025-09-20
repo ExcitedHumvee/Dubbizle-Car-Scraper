@@ -212,7 +212,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 app.get('/api/cars', async (req, res) => {
   try {
-    const { 
+    const {
       make, model, minYear, maxYear, minPrice, maxPrice, minMileage, maxMileage,
       isPremium, bodyType, engineCapacity, horsepower, transmissionType, cylinders,
       interiorColor, exteriorColor, doors, seatingCapacity, trim, warranty, fuelType,
@@ -255,6 +255,7 @@ app.get('/api/cars', async (req, res) => {
       skip: parsedSkip,
       take: parsedTake,
     });
+    console.log(`Fetched ${cars.length} cars from Prisma.`);
     res.json(cars);
   } catch (error) {
     console.error('Error fetching cars:', error);
