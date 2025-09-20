@@ -1,4 +1,12 @@
-need to add 1 more field in Car called spec
-for now just make changes in @test.js, print all Cars at end
-its avbl in html as Regional Specs
-please note values are like "GCC Specs" pls remove " Specs"
+ok now delete all records in DB
+change the Schema and do the migration
+move latest file from processed to unprocessed folder
+make the chnages in save-to-db.js 
+test it and make sure it works
+make the changes in scraper.js
+test it and make sure it works
+finally move all files from processed to unprocessed folder
+run save-to-db.js 
+
+
+make backend filter chnages

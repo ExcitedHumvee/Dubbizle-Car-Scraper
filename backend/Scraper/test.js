@@ -81,6 +81,7 @@ function parseHtmlFile(filePath) {
                 make: details['Make']?.en.value || null,
                 model: details['Model']?.en.value || null,
                 motorsTrim: details['Motors Trim']?.en.value || null,
+                spec: details['Regional Specs']?.en.value?.replace(' Specs', '') || null,
                 createdAt: listing.created_at ? new Date(listing.created_at * 1000).toISOString() : null,
                 isVerifiedUser: listing.is_verified_user || null,
                 isPremium: listing.is_premium || null,
@@ -107,7 +108,7 @@ function processHtmlFiles() {
         });
 
         console.log('\n--- Final Scraped Data ---');
-        // console.log(JSON.stringify(allCars, null, 2));
+        console.log(JSON.stringify(allCars, null, 2));
         console.log(`\nTotal cars scraped: ${allCars.length}`);
     });
 }

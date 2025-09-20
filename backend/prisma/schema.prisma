@@ -15,6 +15,7 @@ model Car {
   mileage           Int?
   price             Int?
   title             String?
+  spec              String?
   isPremium         Boolean?
   bodyType          String?
   engineCapacity    String?

@@ -7,6 +7,6 @@ cd backend
     npm start
 
 TODO:   
-    after save to db, output how many cars in DB rn
+    for save to db, it should process files from oldest to newest(date in filename)
     backend server cache
     gcc/ american specs
