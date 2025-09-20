@@ -8,6 +8,8 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
+
+
 app.use(express.json());
 
 // Request logging middleware
@@ -26,7 +28,7 @@ const swaggerOptions = {
       description: 'API for car data from Dubbizle',
     },
     servers: [
-      {
+      {  
         url: `http://localhost:${PORT}`,
         description: 'Development server',
       },
@@ -194,7 +196,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *           type: integer
  *           minimum: 1
  *         description: Number of items to take for pagination (default 1000)
- *     responses:
+ *     responses: 
  *       200:
  *         description: A list of cars matching the criteria.
  *         content:
@@ -293,6 +295,7 @@ app.get('/api/cars', async (req, res) => {
  */
 app.get('/api/cars/meta', async (req, res) => {
   try {
+    console.log('Fetching car metadata from Prisma...');
     const makes = await prisma.car.findMany({
       select: { make: true },
       distinct: ['make'],
@@ -375,7 +378,23 @@ app.get('/api/cars/:id', async (req, res) => {
 
 
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
+// A new main function to handle startup
+async function main() {
+  // Any async startup logic can go here, e.g., connecting to the DB.
+  // Prisma lazy-connects, so we don't need an explicit prisma.$connect() unless we want to test the connection on startup.
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
+  });
+}
+
+// Call the main function and catch any errors
+main().catch((e) => {
+  console.error('An error occurred during server startup:', e);
+  process.exit(1);
 });
+
+// Add this at the very end of the file
+setInterval(() => { }, 1 << 30); // A long interval to keep the process alive
+
