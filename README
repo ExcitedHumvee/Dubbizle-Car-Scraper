@@ -7,5 +7,6 @@ cd backend
     npm start
 
 TODO:    
+    server not returning all cars
     backend server cache
     gcc/ american specs
