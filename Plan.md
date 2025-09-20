@@ -45,7 +45,7 @@ The frontend will provide an interactive user interface for filtering and visual
 - **API Service:**
   - Create a dedicated service (e.g., `api.js`) to handle all API requests to the backend.
 - **Component Breakdown:**
-  - **`Filters.js`**: A component containing all the filter controls (dropdowns for make/model, sliders or input fields for ranges).
+  - **`Filters.js`**: A component containing all the filter controls (dropdowns for make/model it should support multiple selections, sliders and/or input fields for ranges).
   - **`ScatterPlot.js`**: A reusable chart component that receives data and configuration to render the scatter plots. It will use a library like `react-chartjs-2` or `Recharts`.
   - **`CarDetailsModal.js`**: A modal component that appears when a data point is clicked on a graph, displaying detailed car information.
 - **Graph Implementation:**
