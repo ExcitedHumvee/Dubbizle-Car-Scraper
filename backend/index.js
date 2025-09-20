@@ -377,24 +377,32 @@ app.get('/api/cars/:id', async (req, res) => {
 });
 
 
+const server = app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
+});
 
-// A new main function to handle startup
-async function main() {
-  // Any async startup logic can go here, e.g., connecting to the DB.
-  // Prisma lazy-connects, so we don't need an explicit prisma.$connect() unless we want to test the connection on startup.
+// Graceful shutdown logic
+async function gracefulShutdown(signal) {
+  console.log(`\nReceived ${signal}, shutting down gracefully.`);
 
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
+  // 1. Stop the server from accepting new connections
+  server.close(async () => {
+    console.log('HTTP server closed.');
+
+    // 2. Disconnect from the database
+    try {
+      await prisma.$disconnect();
+      console.log('Prisma client disconnected.');
+      // 3. Exit the process
+      process.exit(0);
+    } catch (e) {
+      console.error('Error during Prisma disconnection:', e);
+      process.exit(1);
+    }
   });
 }
 
-// Call the main function and catch any errors
-main().catch((e) => {
-  console.error('An error occurred during server startup:', e);
-  process.exit(1);
-});
-
-// Add this at the very end of the file
-setInterval(() => { }, 1 << 30); // A long interval to keep the process alive
-
+// Listen for termination signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT')); // Catches Ctrl+C
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM')); // Catches `kill`

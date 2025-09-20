@@ -4,7 +4,7 @@
   "description": "Backend for Dubbizle Car Scraper",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "nodemon index.js",
     "scrape": "node scraper/scraper.js && node scraper/save-to-db.js && node scraper/countCars.js",
     "scrape:test": "node scraper/test.js",
     "db:save": "node scraper/save-to-db.js && node scraper/countCars.js",
