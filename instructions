@@ -1,1 +1,4 @@
-after save to db, output how many total cars in DB in console
+need to add 1 more field in Car called spec
+for now just make changes in @test.js, print all Cars at end
+its avbl in html as Regional Specs
+please note values are like "GCC Specs" pls remove " Specs"
