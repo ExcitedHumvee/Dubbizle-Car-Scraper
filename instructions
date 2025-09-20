@@ -1,1 +1,1 @@
-in backend make sure that when /api/cars are called, it returs all cars, make a defaut limit of 10000000
+after save to db, output how many total cars in DB in console
