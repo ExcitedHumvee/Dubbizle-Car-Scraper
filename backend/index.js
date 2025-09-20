@@ -97,7 +97,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *         schema:
  *           type: boolean
  *         description: Filter by premium status
- *      - in: query
+ *       - in: query
  *         name: spec
  *         schema:
  *           type: string
