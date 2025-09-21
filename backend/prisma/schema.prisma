@@ -40,7 +40,7 @@ model Car {
   isVerifiedUser    Boolean?
   createdAt         DateTime?
   added             DateTime?
-  last_updated      DateTime      @updatedAt
+  last_updated      DateTime
   history           CarHistory[]
   features          CarFeature[]
 
@@ -67,7 +67,7 @@ model CarHistory {
   listingId   String?
   price       Int?
   mileage     Int?
-  changed_at  DateTime @default(now())
+  changed_at  DateTime
 }
 
 model CarFeature {

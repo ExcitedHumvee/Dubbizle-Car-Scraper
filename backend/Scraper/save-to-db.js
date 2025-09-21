@@ -20,6 +20,12 @@ async function main() {
       });
 
     for (const file of files) {
+      const name = file.split('.')[0];
+      const parts = name.split('T');
+      const timeParts = parts[1].split('-');
+      const isoStr = `${parts[0]}T${timeParts.slice(0, 3).join(':')}.${timeParts[3]}Z`;
+      const fileTimestamp = new Date(isoStr);
+
 
       const filePath = path.join(unprocessedDir, file);
       const fileContent = await fs.readFile(filePath, 'utf-8');
@@ -83,6 +89,7 @@ async function main() {
           delete dataToUpdate.listingId;
 
           if (Object.keys(dataToUpdate).length > 0 && hasChanges) {
+            dataToUpdate.last_updated = fileTimestamp;
             // Check if price or mileage specifically changed for history
             const priceChanged = dataToUpdate.price !== undefined && existingCar.price !== dataToUpdate.price;
             const mileageChanged = dataToUpdate.mileage !== undefined && existingCar.mileage !== dataToUpdate.mileage;
@@ -93,6 +100,7 @@ async function main() {
                   listingId: listingId,
                   price: dataToUpdate.price !== undefined ? dataToUpdate.price : existingCar.price,
                   mileage: dataToUpdate.mileage !== undefined ? dataToUpdate.mileage : existingCar.mileage,
+                  changed_at: fileTimestamp,
                 },
               });
             }
@@ -110,6 +118,7 @@ async function main() {
           await prisma.car.create({
             data: {
               ...carPayload,
+              last_updated: fileTimestamp,
               features: {
                 create: [
                   ...(badges || []).map(b => ({ feature_type: 'badge', feature_name: b })),
@@ -121,6 +130,7 @@ async function main() {
                 create: {
                     price: carPayload.price,
                     mileage: carPayload.mileage,
+                    changed_at: fileTimestamp,
                 }
               }
             },
