@@ -55,7 +55,7 @@ async function main() {
 
         if (existingCar) {
           // Car exists, check for updates
-          if (existingCar.price !== carPayload.price || existingCar.mileage !== carPayload.mileage) {
+          if (existingCar.price !== carPayload.price || existingCar.mileage !== carPayload.mileage || (existingCar.spec === null && carPayload.spec !== null)) {
             await prisma.carHistory.create({
               data: {
                 listingId: listingId,

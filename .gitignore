@@ -11,4 +11,4 @@
 
 /backend/dist
 
-/scraper/errors
+/scraper/errors/*

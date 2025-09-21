@@ -7,4 +7,4 @@ cd backend
     npm start
 
 TODO:   
-    backend server cache
+    spec are not updated for most cars, thats because when this project started, spec was not stored in scraper.js (and also old files in processed/unprocessed folder). but now after running scraper.js we have spec for most cars. so we need to update the db with new spec data. i suggest adding logic in save-to
