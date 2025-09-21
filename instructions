@@ -1,1 +1,3 @@
-i see that sometimes, when addidng a row in CarHistory or updating anything in Car, sometimes the incoming value is null or undefined, pls handle this if incoming value is null or undefined, then do not update, on the other hand if existing value is null or undefined, and incoming value is valid, then update it
+modify schema: last_updated field in Car and changed_at field in CarHistory should not be automatically generated, the user should manually set this field, after this do the migration (note i have deleted the DB)
+modify save-to-db.js: if a car is getting updated, update the last_updated of Car and changed_at of CarHistory as per the DateTime of the current json file being processed
+do npm run db:save
