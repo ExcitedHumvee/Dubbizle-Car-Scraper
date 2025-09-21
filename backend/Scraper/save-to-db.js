@@ -55,17 +55,51 @@ async function main() {
 
         if (existingCar) {
           // Car exists, check for updates
-          if (existingCar.price !== carPayload.price || existingCar.mileage !== carPayload.mileage || (existingCar.spec === null && carPayload.spec !== null)) {
-            await prisma.carHistory.create({
-              data: {
-                listingId: listingId,
-                price: carPayload.price,
-                mileage: carPayload.mileage,
-              },
-            });
+          const dataToUpdate = {};
+          let hasChanges = false;
+
+          for (const key in carPayload) {
+            const incomingValue = carPayload[key];
+            const existingValue = existingCar[key];
+
+            // Only include if incoming value is not null or undefined
+            if (incomingValue !== null && incomingValue !== undefined) {
+              // If existing value is null/undefined OR incoming value is different, then it's a change
+              if (existingValue === null || existingValue === undefined || incomingValue !== existingValue) {
+                dataToUpdate[key] = incomingValue;
+                // Special handling for Date objects to compare their string representation
+                if (incomingValue instanceof Date && existingValue instanceof Date) {
+                  if (incomingValue.toISOString() !== existingValue.toISOString()) {
+                    hasChanges = true;
+                  }
+                } else if (incomingValue !== existingValue) {
+                  hasChanges = true;
+                }
+              }
+            }
+          }
+
+          // Ensure listingId is not updated as it's the primary key
+          delete dataToUpdate.listingId;
+
+          if (Object.keys(dataToUpdate).length > 0 && hasChanges) {
+            // Check if price or mileage specifically changed for history
+            const priceChanged = dataToUpdate.price !== undefined && existingCar.price !== dataToUpdate.price;
+            const mileageChanged = dataToUpdate.mileage !== undefined && existingCar.mileage !== dataToUpdate.mileage;
+
+            if (priceChanged || mileageChanged) {
+              await prisma.carHistory.create({
+                data: {
+                  listingId: listingId,
+                  price: dataToUpdate.price !== undefined ? dataToUpdate.price : existingCar.price,
+                  mileage: dataToUpdate.mileage !== undefined ? dataToUpdate.mileage : existingCar.mileage,
+                },
+              });
+            }
+
             await prisma.car.update({
               where: { listingId },
-              data: carPayload,
+              data: dataToUpdate,
             });
             updatedCars++;
           } else {
