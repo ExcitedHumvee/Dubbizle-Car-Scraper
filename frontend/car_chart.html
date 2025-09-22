@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Price vs Mileage Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            pointer-events: none;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .point {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // Wait for all D3 components to load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the dimensions and margins of the graph
+            const margin = {top: 40, right: 40, bottom: 60, left: 70};
+            const width = 800 - margin.left - margin.right;
+            const height = 500 - margin.top - margin.bottom;
+
+        // Create the SVG container
+        const svg = d3.select("#chart")
+            .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Create tooltip div
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Load and process the data
+        fetch('Car_202509222105.json')
+            .then(response => response.json())
+            .then(data => {
+                const cars = data.Car;
+
+                // Create scales
+                const x = d3.scaleLinear()
+                    .domain([0, d3.max(cars, d => d.mileage)])
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain([0, d3.max(cars, d => d.price)])
+                    .range([height, 0]);
+
+                // Create data for the trend line
+                const curveData = [];
+                
+                // Sort cars by mileage
+                const sortedCars = [...cars].sort((a, b) => a.mileage - b.mileage);
+                
+                // Create smoothed points for the curve
+                const numPoints = 20; // number of points to create
+                for (let i = 0; i < numPoints; i++) {
+                    const t = i / (numPoints - 1);
+                    const index = Math.floor(t * (sortedCars.length - 1));
+                    
+                    // Get a window of points around the current index
+                    const windowSize = 5;
+                    const start = Math.max(0, index - windowSize);
+                    const end = Math.min(sortedCars.length - 1, index + windowSize);
+                    const window = sortedCars.slice(start, end + 1);
+                    
+                    // Calculate average price and mileage for this window
+                    const avgMileage = d3.mean(window, d => d.mileage);
+                    const avgPrice = d3.mean(window, d => d.price);
+                    
+                    curveData.push([avgMileage, avgPrice]);
+                }
+
+                // Log the curve data to verify it's not empty
+                console.log('Curve data:', curveData);
+
+                // Add X axis
+                svg.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x))
+                    .append("text")
+                    .attr("x", width / 2)
+                    .attr("y", 40)
+                    .attr("fill", "black")
+                    .style("text-anchor", "middle")
+                    .text("Mileage (km)");
+
+                // Add Y axis
+                svg.append("g")
+                    .call(d3.axisLeft(y))
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -50)
+                    .attr("x", -(height / 2))
+                    .attr("fill", "black")
+                    .style("text-anchor", "middle")
+                    .text("Price (AED)");
+
+                // Add dots
+                svg.selectAll("circle")
+                    .data(cars)
+                    .join("circle")
+                        .attr("class", "point")
+                        .attr("cx", d => x(d.mileage))
+                        .attr("cy", d => y(d.price))
+                        .attr("r", 6)
+                        .style("fill", "#69b3a2")
+                        .on("mouseover", function(event, d) {
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .style("fill", "#003f5c");
+
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+
+                            tooltip.html(
+                                `Title: ${d.title}<br/>
+                                Price: ${d.price} AED<br/>
+                                Mileage: ${d.mileage} km<br/>
+                                Year: ${d.year}<br/>
+                                Spec: ${d.spec}`
+                            )
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function() {
+                            d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .style("fill", "#69b3a2");
+
+                            tooltip.transition()
+                                .duration(500)
+                                .style("opacity", 0);
+                        })
+                        .on("click", function(event, d) {
+                            window.open(d.detailPageUrl, '_blank');
+                        });
+
+                // Add curved line
+                const line = d3.line()
+                    .x(d => x(d[0]))
+                    .y(d => y(d[1]))
+                    .curve(d3.curveBasis);
+
+                // Draw the curve
+                svg.append("path")
+                    .datum(curveData)
+                    .attr("class", "trendline")
+                    .attr("fill", "none")
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 3)
+                    .attr("stroke-dasharray", "5,5")
+                    .attr("d", line)
+                    .style("opacity", 0.7);
+
+                // Add title
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -margin.top / 2)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "16px")
+                    .style("font-weight", "bold")
+                    .text("Car Price vs Mileage");
+            })
+            .catch(error => console.error('Error loading the data:', error));
+        });
+    </script>
+</body>
+</html>

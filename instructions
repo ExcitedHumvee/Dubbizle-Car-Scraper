@@ -1,4 +1,4 @@
-create a js file in frontend folder
+create a js file in frontend folder; make a fresh file, do not refer to existing react code 
 it should read Car_202509222105.json file (pls have a look at its structure)
 structure looks something like this:
 {
