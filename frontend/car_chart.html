@@ -62,33 +62,111 @@
                     .domain([0, d3.max(cars, d => d.price)])
                     .range([height, 0]);
 
-                // Create data for the trend line
+                // Create data for polynomial regression
                 const curveData = [];
                 
-                // Sort cars by mileage
-                const sortedCars = [...cars].sort((a, b) => a.mileage - b.mileage);
+                // Get x and y values
+                const xValues = cars.map(d => d.mileage);
+                const yValues = cars.map(d => d.price);
                 
-                // Create smoothed points for the curve
-                const numPoints = 20; // number of points to create
-                for (let i = 0; i < numPoints; i++) {
-                    const t = i / (numPoints - 1);
-                    const index = Math.floor(t * (sortedCars.length - 1));
+                // Helper function for polynomial regression
+                function polynomialRegression(x, y, degree) {
+                    const n = x.length;
+                    let xMatrix = [];
+                    let yMatrix = y.map(v => [v]);
                     
-                    // Get a window of points around the current index
-                    const windowSize = 5;
-                    const start = Math.max(0, index - windowSize);
-                    const end = Math.min(sortedCars.length - 1, index + windowSize);
-                    const window = sortedCars.slice(start, end + 1);
+                    // Build the X matrix
+                    for(let i = 0; i < n; i++) {
+                        let row = [];
+                        for(let j = 0; j <= degree; j++) {
+                            row.push(Math.pow(x[i], j));
+                        }
+                        xMatrix.push(row);
+                    }
                     
-                    // Calculate average price and mileage for this window
-                    const avgMileage = d3.mean(window, d => d.mileage);
-                    const avgPrice = d3.mean(window, d => d.price);
+                    // Helper function for matrix multiplication
+                    function multiply(a, b) {
+                        return a.map(row => 
+                            b[0].map((_, i) => 
+                                row.reduce((sum, elem, j) => 
+                                    sum + elem * b[j][i], 0
+                                )
+                            )
+                        );
+                    }
                     
-                    curveData.push([avgMileage, avgPrice]);
+                    // Helper function for matrix transpose
+                    function transpose(matrix) {
+                        return matrix[0].map((_, i) => 
+                            matrix.map(row => row[i])
+                        );
+                    }
+                    
+                    // Calculate coefficients using normal equation
+                    const xTranspose = transpose(xMatrix);
+                    const xTx = multiply(xTranspose, xMatrix);
+                    const xTy = multiply(xTranspose, yMatrix);
+                    
+                    // Solve for coefficients
+                    const coefficients = multiply(
+                        inverse(xTx),
+                        xTy
+                    ).map(row => row[0]);
+                    
+                    return coefficients;
+                }
+                
+                // Helper function for matrix inverse (simplified for small matrices)
+                function inverse(matrix) {
+                    const n = matrix.length;
+                    let result = Array(n).fill().map(() => Array(n).fill(0));
+                    let temp = matrix.map((row, i) => [...row, ...(Array(n).fill().map((_, j) => i === j ? 1 : 0))]);
+                    
+                    // Gaussian elimination
+                    for(let i = 0; i < n; i++) {
+                        let pivot = temp[i][i];
+                        for(let j = 0; j < 2 * n; j++) {
+                            temp[i][j] /= pivot;
+                        }
+                        for(let k = 0; k < n; k++) {
+                            if(k !== i) {
+                                let factor = temp[k][i];
+                                for(let j = 0; j < 2 * n; j++) {
+                                    temp[k][j] -= factor * temp[i][j];
+                                }
+                            }
+                        }
+                    }
+                    
+                    for(let i = 0; i < n; i++) {
+                        for(let j = 0; j < n; j++) {
+                            result[i][j] = temp[i][j + n];
+                        }
+                    }
+                    
+                    return result;
+                }
+                
+                // Calculate polynomial coefficients (3rd degree)
+                const coefficients = polynomialRegression(xValues, yValues, 3);
+                
+                // Generate points for the curve
+                const numPoints = 100;
+                const xMin = d3.min(xValues);
+                const xMax = d3.max(xValues);
+                const xStep = (xMax - xMin) / (numPoints - 1);
+                
+                for(let i = 0; i < numPoints; i++) {
+                    const x = xMin + i * xStep;
+                    let y = 0;
+                    for(let j = 0; j < coefficients.length; j++) {
+                        y += coefficients[j] * Math.pow(x, j);
+                    }
+                    curveData.push([x, y]);
                 }
 
-                // Log the curve data to verify it's not empty
-                console.log('Curve data:', curveData);
+                console.log('Polynomial coefficients:', coefficients);
+                console.log('Curve data points:', curveData.length);
 
                 // Add X axis
                 svg.append("g")
@@ -155,22 +233,85 @@
                             window.open(d.detailPageUrl, '_blank');
                         });
 
-                // Add curved line
+                // Calculate moving average curve
+                const movingAverageData = [];
+                const sortedForMA = [...cars].sort((a, b) => a.mileage - b.mileage);
+                const windowSize = 5;
+                const maPoints = 50;
+                
+                for (let i = 0; i < maPoints; i++) {
+                    const t = i / (maPoints - 1);
+                    const index = Math.floor(t * (sortedForMA.length - 1));
+                    const start = Math.max(0, index - windowSize);
+                    const end = Math.min(sortedForMA.length - 1, index + windowSize);
+                    const window = sortedForMA.slice(start, end + 1);
+                    const avgMileage = d3.mean(window, d => d.mileage);
+                    const avgPrice = d3.mean(window, d => d.price);
+                    movingAverageData.push([avgMileage, avgPrice]);
+                }
+
+                // Create line generator
                 const line = d3.line()
                     .x(d => x(d[0]))
                     .y(d => y(d[1]))
                     .curve(d3.curveBasis);
 
-                // Draw the curve
+                // Draw the polynomial regression curve
                 svg.append("path")
                     .datum(curveData)
-                    .attr("class", "trendline")
+                    .attr("class", "polynomial")
                     .attr("fill", "none")
                     .attr("stroke", "red")
-                    .attr("stroke-width", 3)
+                    .attr("stroke-width", 2.5)
                     .attr("stroke-dasharray", "5,5")
                     .attr("d", line)
                     .style("opacity", 0.7);
+
+                // Draw the moving average curve
+                svg.append("path")
+                    .datum(movingAverageData)
+                    .attr("class", "moving-average")
+                    .attr("fill", "none")
+                    .attr("stroke", "blue")
+                    .attr("stroke-width", 2.5)
+                    .attr("d", line)
+                    .style("opacity", 0.7);
+
+                // Add legend
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width - 200}, 20)`);
+
+                // Polynomial regression legend item
+                legend.append("line")
+                    .attr("x1", 0)
+                    .attr("x2", 20)
+                    .attr("y1", 0)
+                    .attr("y2", 0)
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 2.5)
+                    .attr("stroke-dasharray", "5,5");
+
+                legend.append("text")
+                    .attr("x", 25)
+                    .attr("y", 4)
+                    .text("Polynomial Regression")
+                    .style("font-size", "12px");
+
+                // Moving average legend item
+                legend.append("line")
+                    .attr("x1", 0)
+                    .attr("x2", 20)
+                    .attr("y1", 20)
+                    .attr("y2", 20)
+                    .attr("stroke", "blue")
+                    .attr("stroke-width", 2.5);
+
+                legend.append("text")
+                    .attr("x", 25)
+                    .attr("y", 24)
+                    .text("Moving Average")
+                    .style("font-size", "12px");
 
                 // Add title
                 svg.append("text")
