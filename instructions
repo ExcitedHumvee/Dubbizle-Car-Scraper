@@ -1,3 +1,4 @@
-modify schema: last_updated field in Car and changed_at field in CarHistory should not be automatically generated, the user should manually set this field, after this do the migration (note i have deleted the DB)
-modify save-to-db.js: if a car is getting updated, update the last_updated of Car and changed_at of CarHistory as per the DateTime of the current json file being processed
-do npm run db:save
+modify @schema.prisma
+    cylinders should be int not string
+    modify save-to-db.js as well accordingly
+    delete db, generate and do migration

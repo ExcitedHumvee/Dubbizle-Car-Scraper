@@ -55,6 +55,7 @@ async function main() {
           price: carInfo.price ? parseInt(carInfo.price) : null,
           mileage: carInfo.mileage ? parseInt(carInfo.mileage) : null,
           year: carInfo.year ? parseInt(carInfo.year) : null,
+          cylinders: carInfo.cylinders ? parseInt(carInfo.cylinders) : null,
           createdAt: carInfo.createdAt ? new Date(carInfo.createdAt) : null,
           added: carInfo.added ? new Date(carInfo.added) : null,
         };

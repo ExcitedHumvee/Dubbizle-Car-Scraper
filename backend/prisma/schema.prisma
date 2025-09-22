@@ -21,7 +21,7 @@ model Car {
   engineCapacity    String?
   horsepower        String?
   transmissionType  String?
-  cylinders         String?
+  cylinders         Int?
   interiorColor     String?
   exteriorColor     String?
   doors             String?
