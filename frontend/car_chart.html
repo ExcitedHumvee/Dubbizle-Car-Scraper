@@ -150,14 +150,9 @@
                 // Calculate polynomial coefficients (3rd degree)
                 const coefficients = polynomialRegression(xValues, yValues, 3);
                 
-                // Generate points for the curve
-                const numPoints = 100;
-                const xMin = d3.min(xValues);
-                const xMax = d3.max(xValues);
-                const xStep = (xMax - xMin) / (numPoints - 1);
-                
-                for(let i = 0; i < numPoints; i++) {
-                    const x = xMin + i * xStep;
+                // Generate points for the polynomial curve
+                for(let i = 0; i < 100; i++) {
+                    const x = d3.min(xValues) + (i / 99) * (d3.max(xValues) - d3.min(xValues));
                     let y = 0;
                     for(let j = 0; j < coefficients.length; j++) {
                         y += coefficients[j] * Math.pow(x, j);
@@ -233,14 +228,65 @@
                             window.open(d.detailPageUrl, '_blank');
                         });
 
-                // Calculate moving average curve
+                // Calculate exponential regression
+                const expRegression = () => {
+                    const n = cars.length;
+                    const xy = cars.map(d => Math.log(d.price) * d.mileage);
+                    const x = cars.map(d => d.mileage);
+                    const y = cars.map(d => Math.log(d.price));
+                    const x2 = cars.map(d => d.mileage * d.mileage);
+                    
+                    const b = (n * d3.sum(xy) - d3.sum(x) * d3.sum(y)) / 
+                            (n * d3.sum(x2) - d3.sum(x) * d3.sum(x));
+                    const a = (d3.sum(y) - b * d3.sum(x)) / n;
+                    
+                    return [Math.exp(a), b]; // returns [a, b] for y = ae^(bx)
+                };
+
+                // Calculate power regression
+                const powerRegression = () => {
+                    // Filter out any zero or negative values
+                    const validData = cars.filter(d => d.mileage > 0 && d.price > 0);
+                    
+                    const n = validData.length;
+                    // Take logs of valid data only
+                    const xy = validData.map(d => Math.log(d.mileage) * Math.log(d.price));
+                    const x = validData.map(d => Math.log(d.mileage));
+                    const y = validData.map(d => Math.log(d.price));
+                    const x2 = validData.map(d => Math.log(d.mileage) * Math.log(d.mileage));
+                    
+                    const sumXY = d3.sum(xy);
+                    const sumX = d3.sum(x);
+                    const sumY = d3.sum(y);
+                    const sumX2 = d3.sum(x2);
+                    
+                    const b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                    const a = Math.exp((sumY - b * sumX) / n);
+                    
+                    console.log('Power regression intermediate values:', {
+                        validPoints: n,
+                        sumXY,
+                        sumX,
+                        sumY,
+                        sumX2
+                    });
+                    
+                    return [a, b]; // returns [a, b] for y = ax^b
+                };
+
+                // Generate curve data points
+                const numPoints = 100;
+                const xMin = d3.min(cars, d => d.mileage);
+                const xMax = d3.max(cars, d => d.mileage);
+                const xStep = (xMax - xMin) / (numPoints - 1);
+
+                // Calculate moving average
                 const movingAverageData = [];
                 const sortedForMA = [...cars].sort((a, b) => a.mileage - b.mileage);
                 const windowSize = 5;
-                const maPoints = 50;
                 
-                for (let i = 0; i < maPoints; i++) {
-                    const t = i / (maPoints - 1);
+                for (let i = 0; i < numPoints; i++) {
+                    const t = i / (numPoints - 1);
                     const index = Math.floor(t * (sortedForMA.length - 1));
                     const start = Math.max(0, index - windowSize);
                     const end = Math.min(sortedForMA.length - 1, index + windowSize);
@@ -250,68 +296,84 @@
                     movingAverageData.push([avgMileage, avgPrice]);
                 }
 
+                // Generate exponential curve data
+                const [expA, expB] = expRegression();
+                const expCurveData = [];
+                for (let i = 0; i < numPoints; i++) {
+                    const x = xMin + i * xStep;
+                    const y = expA * Math.exp(expB * x);
+                    expCurveData.push([x, y]);
+                }
+
+                // Generate power curve data
+                const [powerA, powerB] = powerRegression();
+                const powerCurveData = [];
+                console.log('Power regression coefficients:', {a: powerA, b: powerB});
+                
+                // Use a reasonable starting point for the curve
+                const minX = Math.max(100, xMin); // Start from 100 km to avoid extreme values
+                
+                try {
+                    for (let i = 0; i < numPoints; i++) {
+                        const x = minX + (i / (numPoints - 1)) * (xMax - minX);
+                        const y = powerA * Math.pow(x, powerB);
+                        if (!isNaN(y) && isFinite(y) && y > 0 && y <= d3.max(cars, d => d.price)) {
+                            powerCurveData.push([x, y]);
+                        }
+                    }
+                    console.log('Power curve points generated:', powerCurveData.length);
+                    console.log('Power curve sample points:', powerCurveData.slice(0, 5));
+                } catch (error) {
+                    console.error('Error generating power curve:', error);
+                }
+
                 // Create line generator
                 const line = d3.line()
                     .x(d => x(d[0]))
                     .y(d => y(d[1]))
                     .curve(d3.curveBasis);
 
-                // Draw the polynomial regression curve
-                svg.append("path")
-                    .datum(curveData)
-                    .attr("class", "polynomial")
-                    .attr("fill", "none")
-                    .attr("stroke", "red")
-                    .attr("stroke-width", 2.5)
-                    .attr("stroke-dasharray", "5,5")
-                    .attr("d", line)
-                    .style("opacity", 0.7);
+                // Draw all curves
+                const curves = [
+                    { data: curveData, color: "red", dash: "5,5", name: "Polynomial", class: "polynomial" },
+                    { data: movingAverageData, color: "blue", dash: null, name: "Moving Average", class: "moving-average" },
+                    { data: expCurveData, color: "green", dash: "3,3", name: "Exponential", class: "exponential" },
+                    { data: powerCurveData, color: "purple", dash: "7,3", name: "Power", class: "power" }
+                ];
 
-                // Draw the moving average curve
-                svg.append("path")
-                    .datum(movingAverageData)
-                    .attr("class", "moving-average")
-                    .attr("fill", "none")
-                    .attr("stroke", "blue")
-                    .attr("stroke-width", 2.5)
-                    .attr("d", line)
-                    .style("opacity", 0.7);
+                curves.forEach(curve => {
+                    svg.append("path")
+                        .datum(curve.data)
+                        .attr("class", curve.class)
+                        .attr("fill", "none")
+                        .attr("stroke", curve.color)
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", curve.dash)
+                        .attr("d", line)
+                        .style("opacity", 0.7);
+                });
 
                 // Add legend
                 const legend = svg.append("g")
                     .attr("class", "legend")
-                    .attr("transform", `translate(${width - 200}, 20)`);
+                    .attr("transform", `translate(${width - 150}, 20)`);
 
-                // Polynomial regression legend item
-                legend.append("line")
-                    .attr("x1", 0)
-                    .attr("x2", 20)
-                    .attr("y1", 0)
-                    .attr("y2", 0)
-                    .attr("stroke", "red")
-                    .attr("stroke-width", 2.5)
-                    .attr("stroke-dasharray", "5,5");
+                curves.forEach((curve, i) => {
+                    legend.append("line")
+                        .attr("x1", 0)
+                        .attr("x2", 20)
+                        .attr("y1", i * 20)
+                        .attr("y2", i * 20)
+                        .attr("stroke", curve.color)
+                        .attr("stroke-width", 2.5)
+                        .attr("stroke-dasharray", curve.dash);
 
-                legend.append("text")
-                    .attr("x", 25)
-                    .attr("y", 4)
-                    .text("Polynomial Regression")
-                    .style("font-size", "12px");
-
-                // Moving average legend item
-                legend.append("line")
-                    .attr("x1", 0)
-                    .attr("x2", 20)
-                    .attr("y1", 20)
-                    .attr("y2", 20)
-                    .attr("stroke", "blue")
-                    .attr("stroke-width", 2.5);
-
-                legend.append("text")
-                    .attr("x", 25)
-                    .attr("y", 24)
-                    .text("Moving Average")
-                    .style("font-size", "12px");
+                    legend.append("text")
+                        .attr("x", 25)
+                        .attr("y", i * 20 + 4)
+                        .text(curve.name)
+                        .style("font-size", "12px");
+                });
 
                 // Add title
                 svg.append("text")
