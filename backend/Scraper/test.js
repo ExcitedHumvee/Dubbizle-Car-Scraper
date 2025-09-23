@@ -108,7 +108,7 @@ function processHtmlFiles() {
         });
 
         console.log('\n--- Final Scraped Data ---');
-        console.log(JSON.stringify(allCars, null, 2));
+        // console.log(JSON.stringify(allCars, null, 2));
         console.log(`\nTotal cars scraped: ${allCars.length}`);
     });
 }
