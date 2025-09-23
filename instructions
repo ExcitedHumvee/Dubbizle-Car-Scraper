@@ -1,113 +1,48 @@
-create a js file in frontend folder; make a fresh file, do not refer to existing react code 
-it should read Car_202509222105.json file (pls have a look at its structure)
-structure looks something like this:
-{
-"Car": [
-	{
-		"listingId" : "10a87fe8678341f88034645ca690e475",
-		"make" : "Nissan",
-		"model" : "Kicks",
-		"year" : 2019,
-		"mileage" : 118000,
-		"price" : 26500,
-		"title" : "Nissan Kicks SV",
-		"isPremium" : null,
-		"detailPageUrl" : "https:\/\/dubai.dubizzle.com\/motors\/used-cars\/nissan\/kicks\/2025\/9\/16\/nissan-kicks-2019-gcc-16-2-215---10a87fe8678341f88034645ca690e475\/",
-		"bodyType" : "SUV",
-		"engineCapacity" : "1000 - 1499 cc",
-		"horsepower" : "100 - 199 HP",
-		"transmissionType" : "Automatic Transmission",
-		"cylinders" : "4",
-		"interiorColor" : "Black",
-		"exteriorColor" : "Black",
-		"doors" : "4 door",
-		"seatingCapacity" : "5 Seater",
-		"trim" : "SV",
-		"warranty" : "No",
-		"fuelType" : "Petrol",
-		"motorsTrim" : "SV",
-		"spec" : "GCC",
-		"sellerType" : "Owner",
-		"location" : "Al Qusais, Dubai",
-		"neighbourhood" : "Al Qusais",
-		"isNegotiable" : 0,
-		"thumbnailUrl" : "https:\/\/static.dubizzle.com\/frontend-web\/static-resources\/assets\/images\/share-white-border.svg",
-		"vehicleReference" : "2465\/16561595",
-		"isVerifiedUser" : null,
-		"createdAt" : 1758031184000,
-		"added" : 1758031032000,
-		"last_updated" : 1758396024100
-	},
-	{
-		"listingId" : "4d85f56fe0554d04b68b078b41c8cf84",
-		"make" : "Nissan",
-		"model" : "Kicks",
-		"year" : 2018,
-		"mileage" : 108000,
-		"price" : 27000,
-		"title" : "Nissan Kicks SL",
-		"isPremium" : null,
-		"detailPageUrl" : "https:\/\/dubai.dubizzle.com\/motors\/used-cars\/nissan\/kicks\/2025\/9\/18\/2018-nissan-kicks-16l-4-cylinder-2-382---4d85f56fe0554d04b68b078b41c8cf84\/",
-		"bodyType" : "SUV",
-		"engineCapacity" : "1500 - 1999 cc",
-		"horsepower" : "100 - 199 HP",
-		"transmissionType" : "Automatic Transmission",
-		"cylinders" : "4",
-		"interiorColor" : "Black",
-		"exteriorColor" : "Grey",
-		"doors" : "5+ doors",
-		"seatingCapacity" : "5 Seater",
-		"trim" : "SL",
-		"warranty" : "No",
-		"fuelType" : "Petrol",
-		"motorsTrim" : "SL",
-		"spec" : "GCC",
-		"sellerType" : "Owner",
-		"location" : "Deira, Dubai",
-		"neighbourhood" : "Al Muraqqabat",
-		"isNegotiable" : 0,
-		"thumbnailUrl" : "https:\/\/static.dubizzle.com\/frontend-web\/static-resources\/assets\/images\/share-white-border.svg",
-		"vehicleReference" : "2465\/16563597",
-		"isVerifiedUser" : 1,
-		"createdAt" : 1758177943000,
-		"added" : 1758178252000,
-		"last_updated" : 1758396024100
-	},
-	{
-		"listingId" : "3d3bf1f29a64416f8881e63658844742",
-		"make" : "Nissan",
-		"model" : "Kicks",
-		"year" : 2020,
-		"mileage" : 150000,
-		"price" : 27000,
-		"title" : "Nissan Kicks S",
-		"isPremium" : null,
-		"detailPageUrl" : "https:\/\/dubai.dubizzle.com\/motors\/used-cars\/nissan\/kicks\/2025\/9\/9\/nissan-kicks-2020-model-16l-gcc-space-2-280---3d3bf1f29a64416f8881e63658844742\/",
-		"bodyType" : "SUV",
-		"engineCapacity" : "1000 - 1499 cc",
-		"horsepower" : "200 - 299 HP",
-		"transmissionType" : "Automatic Transmission",
-		"cylinders" : "4",
-		"interiorColor" : "Grey",
-		"exteriorColor" : "White",
-		"doors" : "4 door",
-		"seatingCapacity" : "5 Seater",
-		"trim" : "S",
-		"warranty" : "No",
-		"fuelType" : "Petrol",
-		"motorsTrim" : "S",
-		"spec" : "GCC",
-		"sellerType" : "Dealer",
-		"location" : "Ras Al Khor, Dubai",
-		"neighbourhood" : "Ras Al Khor Industrial 2",
-		"isNegotiable" : 0,
-		"thumbnailUrl" : "https:\/\/static.dubizzle.com\/frontend-web\/static-resources\/assets\/images\/share-white-border.svg",
-		"vehicleReference" : "2465\/16553099",
-		"isVerifiedUser" : null,
-		"createdAt" : 1757446563000,
-		"added" : 1758092699000,
-		"last_updated" : 1758396024100
-	}
-]}
-it should create a simple webpage that displays a graph: y axis is price, x axis is mileage
-the graph should be interactive, so that when you hover over a point, it shows the car's title, price, mileage, year, spec and when you click on a point, it opens a new tab and redirects to the detailPageUrl
+i need u to make an html page 
+it should have 3 sections: filter section (less height), chart section (more height), table section (medium height)
+im not sure about conatiners, flexbox, grid, etc but u can choose what u think is best
+ideally use a framwork like tailwind, bootstrap, etc ur choice
+
+the filter section: 
+	it should have 3 parts: The Word "Filters" on the extreme left, then a vertical line, then the next part should show the selected filters (like specific brand, model, year, price range, etc) in a horizontal scrollable way with an "x" button to remove each filter ideally it should be shown as badges (the badges should only show when a filter is enabled) (all these are left aligned), then another vertical line, then the last part should have the actual filters themseleves- create 3 filters: Model (eg. Toyota, Honda, etc) this should be a dropdown, multiple selection and searchable, Year Range (eg. 2010, 2015, etc) this should be a slider where u can select min and max year (limits are 2015 to 2025), Price Range (eg. 5000-10000, 10000-15000, etc) these filters should be right aligned
+the chart section:
+	it will have 2 charts side by side (each taking 50% width), just put 2 images as placeholder for now
+the table section:
+	the headers are as follows:
+		listingId 
+		make 
+		model 
+		year 
+		mileage 
+		price 
+		title 
+		isPremium 
+		detailPageUrl 
+		bodyType 
+		engineCapacity 
+		horsepower 
+		transmissionType 
+		cylinders 
+		interiorColor 
+		exteriorColor 
+		doors 
+		seatingCapacity 
+		trim 
+		warranty 
+		fuelType 
+		motorsTrim 
+		spec 
+		sellerType 
+		location 
+		neighbourhood 
+		isNegotiable 
+		thumbnailUrl 
+		vehicleReference 
+		isVerifiedUser 
+		createdAt 
+		added 
+		last_updated 
+	put 25 rows of dummy data
+	the header row should be sticky when scrolling
+	when a cell of detailsPageUrl is clicked, it should open the link in a new tab
+	when a header is clicked, it should sort the table by that column (asc/desc toggle)
