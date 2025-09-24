@@ -1,11 +1,7 @@
 -- spec counts
-SELECT c.spec, COUNT(c.spec) AS spec_count
+SELECT c.spec, COUNT(*) AS spec_count
 FROM Car AS c
-WHERE c.spec IS NOT NULL
 GROUP BY c.spec;
-
--- spec null counts
-SELECT COUNT(*) FROM Car AS c WHERE c.spec IS NOT NULL;
 
 -- cars and count of history, and also price history, also price history difference
 SELECT
