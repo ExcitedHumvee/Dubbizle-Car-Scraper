@@ -33,33 +33,61 @@
                         <button id="model-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Model
                         </button>
-                        <div id="model-dropdown" class="dropdown-menu p-3" style="width: 240px;">
+                        <div id="model-dropdown" class="dropdown-menu p-3" style="width: 280px; z-index: 1030;">
                             <div class="mb-3">
                                 <label for="model-search" class="visually-hidden">Search</label>
                                 <input type="text" id="model-search" class="form-control" placeholder="Search model">
                             </div>
                             <ul class="list-unstyled overflow-auto" style="max-height: 200px;" aria-labelledby="model-dropdown-button">
-                                <li><div class="form-check dropdown-item"><input class="form-check-input" type="checkbox" value="Toyota" id="checkbox-item-1"><label class="form-check-label ms-2" for="checkbox-item-1">Toyota</label></div></li>
-                                <li><div class="form-check dropdown-item"><input class="form-check-input" type="checkbox" value="Honda" id="checkbox-item-2"><label class="form-check-label ms-2" for="checkbox-item-2">Honda</label></div></li>
-                                <li><div class="form-check dropdown-item"><input class="form-check-input" type="checkbox" value="Ford" id="checkbox-item-3"><label class="form-check-label ms-2" for="checkbox-item-3">Ford</label></div></li>
-                            </ul>
+                            <li>
+                                <label class="dropdown-item">
+                                    <input class="form-check-input me-2" type="checkbox" value="Toyota" id="checkbox-item-1">
+                                    Toyota
+                                </label>
+                            </li>
+                            <li>
+                                <label class="dropdown-item">
+                                    <input class="form-check-input me-2" type="checkbox" value="Honda" id="checkbox-item-2">
+                                    Honda
+                                </label>
+                            </li>
+                            <li>
+                                <label class="dropdown-item">
+                                    <input class="form-check-input me-2" type="checkbox" value="Ford" id="checkbox-item-3">
+                                    Ford
+                                </label>
+                            </li>
+                        </ul>
                         </div>
                     </div>
 
-                    <!-- Year Range Slider -->
-                    <div style="width: 192px;">
-                        <label for="year-range" class="form-label text-center">Year: <span id="year-label">2015 - 2025</span></label>
-                        <input id="year-range" type="range" multiple value="2015,2025" min="2015" max="2025" class="form-range">
+                    <!-- Year Dropdown -->
+                    <div class="dropdown">
+                        <button id="year-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Min Year
+                        </button>
+                        <ul id="year-dropdown" class="dropdown-menu" aria-labelledby="year-dropdown-button" style="z-index: 1030;">
+                            <!-- Years will be dynamically inserted here by JavaScript -->
+                        </ul>
                     </div>
 
-                    <!-- Price Dropdown -->
+                    <!-- Min Price Dropdown -->
                     <div class="dropdown">
-                         <button id="price-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Price Range
+                        <button id="min-price-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Min Price
                         </button>
-                        <ul id="price-dropdown" class="dropdown-menu" aria-labelledby="price-dropdown-button">
-                             <li><a href="#" class="dropdown-item" data-value="5000-10000">$5k - $10k</a></li>
-                             <li><a href="#" class="dropdown-item" data-value="10000-15000">$10k - $15k</a></li>
+                        <ul id="min-price-dropdown" class="dropdown-menu" aria-labelledby="min-price-dropdown-button" style="z-index: 1030;">
+                            <!-- Options will be dynamically inserted here -->
+                        </ul>
+                    </div>
+
+                    <!-- Max Price Dropdown -->
+                    <div class="dropdown">
+                        <button id="max-price-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Max Price
+                        </button>
+                        <ul id="max-price-dropdown" class="dropdown-menu" aria-labelledby="max-price-dropdown-button" style="z-index: 1030;">
+                            <!-- Options will be dynamically inserted here -->
                         </ul>
                     </div>
                 </div>
@@ -169,8 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Filtering Logic
     const filters = {
         models: new Set(),
-        year: { min: 2015, max: 2025 },
-        price: null
+        year: null,
+        price: { min: null, max: null } // Changed from price: null
     };
 
     const applyFilters = () => {
@@ -178,10 +206,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filters.models.size > 0) {
             filteredData = filteredData.filter(item => filters.models.has(item.make));
         }
-        if (filters.price) {
-            const [min, max] = filters.price.split('-').map(Number);
-            filteredData = filteredData.filter(item => item.price >= min && item.price <= max);
+
+        // Add this block for the new year filter
+        if (filters.year) {
+            filteredData = filteredData.filter(item => item.year >= filters.year);
         }
+
+        // --- Updated Price filtering logic ---
+            if (filters.price.min) {
+                filteredData = filteredData.filter(item => item.price >= filters.price.min);
+            }
+            if (filters.price.max) {
+                filteredData = filteredData.filter(item => item.price <= filters.price.max);
+            }
 
         renderTable(filteredData);
         updateBadges();
@@ -194,19 +231,34 @@ document.addEventListener('DOMContentLoaded', () => {
         let hasFilters = false;
 
         filters.models.forEach(model => {
+            // ... (existing model badge logic)
+        });
+
+        // Add this block for the year badge
+        if (filters.year) {
             hasFilters = true;
-            const badge = createBadge(`Model: ${model}`, () => {
-                filters.models.delete(model);
-                document.querySelector(`#model-dropdown input[value="${model}"]`).checked = false;
+            const badge = createBadge(`Min Year: ${filters.year}`, () => {
+                filters.year = null;
                 applyFilters();
             });
             badgesContainer.appendChild(badge);
-        });
+        }
         
-        if (filters.price) {
+        // --- Updated badge logic for Min Price ---
+        if (filters.price.min) {
             hasFilters = true;
-            const badge = createBadge(`Price: ${filters.price}`, () => {
-                filters.price = null;
+            const badge = createBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => {
+                filters.price.min = null;
+                applyFilters();
+            });
+            badgesContainer.appendChild(badge);
+        }
+
+        // --- Updated badge logic for Max Price ---
+        if (filters.price.max) {
+            hasFilters = true;
+            const badge = createBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => {
+                filters.price.max = null;
                 applyFilters();
             });
             badgesContainer.appendChild(badge);
@@ -216,6 +268,60 @@ document.addEventListener('DOMContentLoaded', () => {
             badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>';
         }
     };
+
+    // Populate Year Dropdown and Add Event Listeners
+    const yearDropdown = document.getElementById('year-dropdown');
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear; year >= 2015; year--) {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = '#';
+        link.className = 'dropdown-item';
+        link.textContent = year;
+        link.setAttribute('data-value', year);
+        li.appendChild(link);
+        yearDropdown.appendChild(li);
+    }
+
+    yearDropdown.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (e.target.matches('a.dropdown-item')) {
+            filters.year = Number(e.target.getAttribute('data-value'));
+            applyFilters();
+        }
+    });
+
+    // Populate Price Dropdowns and Add Event Listeners
+    const minPriceDropdown = document.getElementById('min-price-dropdown');
+    const maxPriceDropdown = document.getElementById('max-price-dropdown');
+    const priceOptions = [5000, 10000, 15000, 20000, 25000];
+
+    const populatePriceDropdown = (dropdown, options) => {
+        options.forEach(price => {
+            const li = document.createElement('li');
+            li.innerHTML = `<a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a>`;
+            dropdown.appendChild(li);
+        });
+    };
+
+    populatePriceDropdown(minPriceDropdown, priceOptions);
+    populatePriceDropdown(maxPriceDropdown, priceOptions);
+
+    minPriceDropdown.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (e.target.matches('a.dropdown-item')) {
+            filters.price.min = Number(e.target.getAttribute('data-value'));
+            applyFilters();
+        }
+    });
+
+    maxPriceDropdown.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (e.target.matches('a.dropdown-item')) {
+            filters.price.max = Number(e.target.getAttribute('data-value'));
+            applyFilters();
+        }
+    });
     
     const createBadge = (text, removeCallback) => {
         const badge = document.createElement('span');
@@ -230,14 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkbox.addEventListener('change', (e) => {
             if (e.target.checked) filters.models.add(e.target.value);
             else filters.models.delete(e.target.value);
-            applyFilters();
-        });
-    });
-    
-    document.querySelectorAll('#price-dropdown a').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            filters.price = e.target.getAttribute('data-value');
             applyFilters();
         });
     });
