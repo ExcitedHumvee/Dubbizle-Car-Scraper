@@ -362,21 +362,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 dropdown.hide();
             });
         });
-        
+
         // Table Header Sorting Listener
         document.querySelectorAll('#data-table thead th').forEach(header => {
+            // Store the original header text in a data attribute for reference
             if (header.style.cursor === 'pointer') {
+                header.setAttribute('data-original-text', header.textContent);
+            
                 header.addEventListener('click', () => {
-                    const columnKey = header.textContent;
+                    // Use the original text as the key for sorting logic
+                    const columnKey = header.getAttribute('data-original-text');
                     const currentDirection = sortState[columnKey] || 'desc';
                     const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
                     sortState = { [columnKey]: newDirection };
 
+                    // --- Visual Indicator Logic ---
+                    // 1. Clear indicators from all other headers
+                    document.querySelectorAll('#data-table thead th[data-original-text]').forEach(th => {
+                        th.textContent = th.getAttribute('data-original-text');
+                    });
+
+                    // 2. Add the new indicator to the clicked header
+                    header.textContent = `${columnKey} ${newDirection === 'asc' ? '▲' : '▼'}`;
+                    // --- End of Visual Indicator Logic ---
+
+                    // Sort the data
                     const sortedData = [...tableData].sort((a, b) => {
                         if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1;
                         if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1;
                         return 0;
                     });
+                    
                     renderTable(sortedData);
                 });
             }
