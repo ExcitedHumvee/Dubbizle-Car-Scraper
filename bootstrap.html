@@ -39,25 +39,25 @@
                                 <input type="text" id="model-search" class="form-control" placeholder="Search model">
                             </div>
                             <ul class="list-unstyled overflow-auto" style="max-height: 200px;" aria-labelledby="model-dropdown-button">
-                            <li>
-                                <label class="dropdown-item">
-                                    <input class="form-check-input me-2" type="checkbox" value="Toyota" id="checkbox-item-1">
-                                    Toyota
-                                </label>
-                            </li>
-                            <li>
-                                <label class="dropdown-item">
-                                    <input class="form-check-input me-2" type="checkbox" value="Honda" id="checkbox-item-2">
-                                    Honda
-                                </label>
-                            </li>
-                            <li>
-                                <label class="dropdown-item">
-                                    <input class="form-check-input me-2" type="checkbox" value="Ford" id="checkbox-item-3">
-                                    Ford
-                                </label>
-                            </li>
-                        </ul>
+                                <li>
+                                    <label class="dropdown-item">
+                                        <input class="form-check-input me-2" type="checkbox" value="Toyota" id="checkbox-item-1">
+                                        Toyota
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="dropdown-item">
+                                        <input class="form-check-input me-2" type="checkbox" value="Honda" id="checkbox-item-2">
+                                        Honda
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="dropdown-item">
+                                        <input class="form-check-input me-2" type="checkbox" value="Ford" id="checkbox-item-3">
+                                        Ford
+                                    </label>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 
@@ -135,11 +135,70 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const tableBody = document.querySelector('#data-table tbody');
+
+    // -------------------------------------------------------------------------
+    // --- 1. STATE MANAGEMENT & INITIALIZATION ---
+    // -------------------------------------------------------------------------
+
+    // Central object to hold all active filters
+    const filters = {
+        models: new Set(),
+        year: null,
+        price: { min: null, max: null }
+    };
+
+    // Store the original dataset and the current sort state
     let tableData = [];
     let sortState = {};
 
-    // Generate Dummy Data
+    // DOM element references
+    const tableBody = document.querySelector('#data-table tbody');
+    const badgesContainer = document.getElementById('selected-filters-container');
+    const yearDropdown = document.getElementById('year-dropdown');
+    const minPriceDropdown = document.getElementById('min-price-dropdown');
+    const maxPriceDropdown = document.getElementById('max-price-dropdown');
+
+
+    // -------------------------------------------------------------------------
+    // --- 2. CORE LOGIC (DATA HANDLING & FILTERING) ---
+    // -------------------------------------------------------------------------
+
+    /**
+     * Applies all active filters from the 'filters' object to the master 'tableData'
+     * and re-renders the table.
+     */
+    const applyFilters = () => {
+        let filteredData = [...tableData];
+
+        // Apply model filter
+        if (filters.models.size > 0) {
+            filteredData = filteredData.filter(item => filters.models.has(item.make));
+        }
+
+        // Apply minimum year filter
+        if (filters.year) {
+            filteredData = filteredData.filter(item => item.year >= filters.year);
+        }
+
+        // Apply minimum price filter
+        if (filters.price.min) {
+            filteredData = filteredData.filter(item => item.price >= filters.price.min);
+        }
+
+        // Apply maximum price filter
+        if (filters.price.max) {
+            filteredData = filteredData.filter(item => item.price <= filters.price.max);
+        }
+
+        renderTable(filteredData);
+        updateBadges();
+    };
+
+    /**
+     * Generates an array of dummy data for the table.
+     * @param {number} count - The number of rows to generate.
+     * @returns {Array<Object>}
+     */
     const generateDummyData = (count) => {
         const data = [];
         const makes = ['Toyota', 'Honda', 'Ford'];
@@ -150,14 +209,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 make: make,
                 model: `${make} Model ${i}`,
                 year: 2015 + Math.floor(Math.random() * 11),
-                price: 5000 + Math.floor(Math.random() * 15000),
+                price: 5000 + Math.floor(Math.random() * 25000),
                 detailPageUrl: `https://example.com/listing/${1000 + i}`
             });
         }
         return data;
     };
 
-    // Render Table
+
+    // -------------------------------------------------------------------------
+    // --- 3. UI RENDERING FUNCTIONS ---
+    // -------------------------------------------------------------------------
+
+    /**
+     * Clears and re-renders the table body with the provided data.
+     * @param {Array<Object>} data - The data to display in the table.
+     */
     const renderTable = (data) => {
         tableBody.innerHTML = '';
         data.forEach(row => {
@@ -174,67 +241,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Sorting Logic
-    document.querySelectorAll('#data-table thead th').forEach(header => {
-        if (header.style.cursor === 'pointer') {
-            header.addEventListener('click', () => {
-                const columnKey = header.textContent;
-                const currentDirection = sortState[columnKey] || 'desc';
-                const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-                sortState = { [columnKey]: newDirection };
-
-                const sortedData = [...tableData].sort((a, b) => {
-                    if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1;
-                    if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1;
-                    return 0;
-                });
-
-                renderTable(sortedData);
-            });
-        }
-    });
-
-    // Filtering Logic
-    const filters = {
-        models: new Set(),
-        year: null,
-        price: { min: null, max: null } // Changed from price: null
-    };
-
-    const applyFilters = () => {
-        let filteredData = [...tableData];
-        if (filters.models.size > 0) {
-            filteredData = filteredData.filter(item => filters.models.has(item.make));
-        }
-
-        // Add this block for the new year filter
-        if (filters.year) {
-            filteredData = filteredData.filter(item => item.year >= filters.year);
-        }
-
-        // --- Updated Price filtering logic ---
-            if (filters.price.min) {
-                filteredData = filteredData.filter(item => item.price >= filters.price.min);
-            }
-            if (filters.price.max) {
-                filteredData = filteredData.filter(item => item.price <= filters.price.max);
-            }
-
-        renderTable(filteredData);
-        updateBadges();
-    };
-    
-    // Badge Logic
-    const badgesContainer = document.getElementById('selected-filters-container');
+    /**
+     * Updates the filter badges display based on the current state of the 'filters' object.
+     */
     const updateBadges = () => {
         badgesContainer.innerHTML = '';
         let hasFilters = false;
 
+        // Model badges
         filters.models.forEach(model => {
-            // ... (existing model badge logic)
+            hasFilters = true;
+            const badge = createBadge(`Model: ${model}`, () => {
+                filters.models.delete(model);
+                document.querySelector(`#model-dropdown input[value="${model}"]`).checked = false;
+                applyFilters();
+            });
+            badgesContainer.appendChild(badge);
         });
-
-        // Add this block for the year badge
+        
+        // Year badge
         if (filters.year) {
             hasFilters = true;
             const badge = createBadge(`Min Year: ${filters.year}`, () => {
@@ -244,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
             badgesContainer.appendChild(badge);
         }
         
-        // --- Updated badge logic for Min Price ---
+        // Min price badge
         if (filters.price.min) {
             hasFilters = true;
             const badge = createBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => {
@@ -254,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
             badgesContainer.appendChild(badge);
         }
 
-        // --- Updated badge logic for Max Price ---
+        // Max price badge
         if (filters.price.max) {
             hasFilters = true;
             const badge = createBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => {
@@ -264,65 +289,18 @@ document.addEventListener('DOMContentLoaded', () => {
             badgesContainer.appendChild(badge);
         }
 
+        // Display placeholder text if no filters are active
         if (!hasFilters) {
             badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>';
         }
     };
 
-    // Populate Year Dropdown and Add Event Listeners
-    const yearDropdown = document.getElementById('year-dropdown');
-    const currentYear = new Date().getFullYear();
-    for (let year = currentYear; year >= 2015; year--) {
-        const li = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = '#';
-        link.className = 'dropdown-item';
-        link.textContent = year;
-        link.setAttribute('data-value', year);
-        li.appendChild(link);
-        yearDropdown.appendChild(li);
-    }
-
-    yearDropdown.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (e.target.matches('a.dropdown-item')) {
-            filters.year = Number(e.target.getAttribute('data-value'));
-            applyFilters();
-        }
-    });
-
-    // Populate Price Dropdowns and Add Event Listeners
-    const minPriceDropdown = document.getElementById('min-price-dropdown');
-    const maxPriceDropdown = document.getElementById('max-price-dropdown');
-    const priceOptions = [5000, 10000, 15000, 20000, 25000];
-
-    const populatePriceDropdown = (dropdown, options) => {
-        options.forEach(price => {
-            const li = document.createElement('li');
-            li.innerHTML = `<a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a>`;
-            dropdown.appendChild(li);
-        });
-    };
-
-    populatePriceDropdown(minPriceDropdown, priceOptions);
-    populatePriceDropdown(maxPriceDropdown, priceOptions);
-
-    minPriceDropdown.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (e.target.matches('a.dropdown-item')) {
-            filters.price.min = Number(e.target.getAttribute('data-value'));
-            applyFilters();
-        }
-    });
-
-    maxPriceDropdown.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (e.target.matches('a.dropdown-item')) {
-            filters.price.max = Number(e.target.getAttribute('data-value'));
-            applyFilters();
-        }
-    });
-    
+    /**
+     * Creates a Bootstrap badge component.
+     * @param {string} text - The text to display in the badge.
+     * @param {Function} removeCallback - The function to call when the badge's close button is clicked.
+     * @returns {HTMLElement}
+     */
     const createBadge = (text, removeCallback) => {
         const badge = document.createElement('span');
         badge.className = 'badge bg-primary me-2';
@@ -331,26 +309,123 @@ document.addEventListener('DOMContentLoaded', () => {
         return badge;
     };
 
-    // Event Listeners for filters
-    document.querySelectorAll('#model-dropdown input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-            if (e.target.checked) filters.models.add(e.target.value);
-            else filters.models.delete(e.target.value);
-            applyFilters();
-        });
-    });
 
-    // Search in model dropdown
-    document.getElementById('model-search').addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        document.querySelectorAll('#model-dropdown ul li').forEach(li => {
-            const label = li.querySelector('label').textContent.toLowerCase();
-            li.style.display = label.includes(searchTerm) ? '' : 'none';
-        });
-    });
+    // -------------------------------------------------------------------------
+    // --- 4. DYNAMIC FILTER POPULATION ---
+    // -------------------------------------------------------------------------
 
-    // Initial Load
-    tableData = generateDummyData(25);
+    /**
+     * Populates the Min Year dropdown with options from the current year down to 2015.
+     */
+    const populateYearFilter = () => {
+        const currentYear = new Date().getFullYear();
+        for (let year = currentYear; year >= 2015; year--) {
+            const li = document.createElement('li');
+            li.innerHTML = `<a class="dropdown-item" href="#" data-value="${year}">${year}</a>`;
+            yearDropdown.appendChild(li);
+        }
+    };
+
+    /**
+     * Populates the Min and Max Price dropdowns with a predefined set of options.
+     */
+    const populatePriceFilters = () => {
+        const priceOptions = [5000, 10000, 15000, 20000, 25000];
+        priceOptions.forEach(price => {
+            const optionHTML = `<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`;
+            minPriceDropdown.innerHTML += optionHTML;
+            maxPriceDropdown.innerHTML += optionHTML;
+        });
+    };
+
+
+    // -------------------------------------------------------------------------
+    // --- 5. EVENT LISTENERS ---
+    // -------------------------------------------------------------------------
+
+    /**
+     * Attaches all necessary event listeners for user interaction.
+     */
+    const setupEventListeners = () => {
+        // Table Header Sorting Listener
+        document.querySelectorAll('#data-table thead th').forEach(header => {
+            if (header.style.cursor === 'pointer') {
+                header.addEventListener('click', () => {
+                    const columnKey = header.textContent;
+                    const currentDirection = sortState[columnKey] || 'desc';
+                    const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+                    sortState = { [columnKey]: newDirection };
+
+                    const sortedData = [...tableData].sort((a, b) => {
+                        if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1;
+                        if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    renderTable(sortedData);
+                });
+            }
+        });
+
+        // Model Filter Checkbox Listeners
+        document.querySelectorAll('#model-dropdown input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) filters.models.add(e.target.value);
+                else filters.models.delete(e.target.value);
+                applyFilters();
+            });
+        });
+
+        // Model Filter Search Input Listener
+        document.getElementById('model-search').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('#model-dropdown ul li').forEach(li => {
+                const label = li.querySelector('label').textContent.toLowerCase();
+                li.style.display = label.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Year Filter Dropdown Listener
+        yearDropdown.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.matches('a.dropdown-item')) {
+                filters.year = Number(e.target.getAttribute('data-value'));
+                applyFilters();
+            }
+        });
+        
+        // Min Price Filter Dropdown Listener
+        minPriceDropdown.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.matches('a.dropdown-item')) {
+                filters.price.min = Number(e.target.getAttribute('data-value'));
+                applyFilters();
+            }
+        });
+
+        // Max Price Filter Dropdown Listener
+        maxPriceDropdown.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.matches('a.dropdown-item')) {
+                filters.price.max = Number(e.target.getAttribute('data-value'));
+                applyFilters();
+            }
+        });
+    };
+
+
+    // -------------------------------------------------------------------------
+    // --- 6. INITIAL PAGE LOAD ---
+    // -------------------------------------------------------------------------
+    
+    // Dynamically populate filter options
+    populateYearFilter();
+    populatePriceFilters();
+    
+    // Attach all event listeners
+    setupEventListeners();
+
+    // Generate initial data and render the table
+    tableData = generateDummyData(50); // Increased count for better testing
     renderTable(tableData);
 });
 </script>
