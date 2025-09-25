@@ -347,6 +347,22 @@ document.addEventListener('DOMContentLoaded', () => {
      * Attaches all necessary event listeners for user interaction.
      */
     const setupEventListeners = () => {
+
+        // Dropdown Hover Functionality
+        document.querySelectorAll('.dropdown').forEach(dropdownElement => {
+            const dropdown = new bootstrap.Dropdown(dropdownElement.querySelector('.dropdown-toggle'));
+
+            // Show dropdown on hover
+            dropdownElement.addEventListener('mouseenter', () => {
+                dropdown.show();
+            });
+
+            // Hide dropdown when mouse leaves
+            dropdownElement.addEventListener('mouseleave', () => {
+                dropdown.hide();
+            });
+        });
+        
         // Table Header Sorting Listener
         document.querySelectorAll('#data-table thead th').forEach(header => {
             if (header.style.cursor === 'pointer') {
