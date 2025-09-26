@@ -158,7 +158,276 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. STATE MANAGEMENT & INITIALIZATION ---
     // -------------------------------------------------------------------------
     
-    const jsonData = {
+    
+    
+    const filters = { makes: new Set(), year: null, price: { min: null, max: null } };
+    let tableData = [];
+    let sortState = {};
+
+    const tableBody = document.querySelector('#data-table tbody');
+    const badgesContainer = document.getElementById('selected-filters-container');
+    const makeDropdownList = document.querySelector('#make-dropdown ul');
+    const yearDropdown = document.getElementById('year-dropdown');
+    const minPriceDropdown = document.getElementById('min-price-dropdown');
+    const maxPriceDropdown = document.getElementById('max-price-dropdown');
+
+    const applyFilters = () => {
+        let filteredData = [...tableData];
+        if (filters.makes.size > 0) { filteredData = filteredData.filter(item => filters.makes.has(item.make)); }
+        if (filters.year) { filteredData = filteredData.filter(item => item.year >= filters.year); }
+        if (filters.price.min) { filteredData = filteredData.filter(item => item.price >= filters.price.min); }
+        if (filters.price.max) { filteredData = filteredData.filter(item => item.price <= filters.price.max); }
+        renderTable(filteredData);
+        renderPriceVsMileageChart(filteredData);
+        renderPriceVsYearChart(filteredData);
+        updateBadges();
+    };
+
+    const renderTable = (data) => {
+        tableBody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-3 py-2 text-nowrap">${row.listingId || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.make || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.model || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.year || ''}</td>
+                <td class="px-3 py-2 text-nowrap">$${row.price ? row.price.toLocaleString() : ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.mileage ? row.mileage.toLocaleString() : ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.title || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.bodyType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.engineCapacity || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.horsepower || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.transmissionType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.cylinders || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.interiorColor || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.exteriorColor || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.doors || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.seatingCapacity || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.trim || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.warranty || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.fuelType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.spec || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.sellerType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.location || ''}</td>
+                <td class="px-3 py-2 text-nowrap"><a href="${row.detailPageUrl}" target="_blank">View</a></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    };
+
+    function renderPriceVsMileageChart(data) {
+        document.getElementById('chart1').innerHTML = '';
+        const margin = {top: 40, right: 40, bottom: 60, left: 70};
+        const width = 800 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart1")
+            .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        const x = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.mileage)])
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.price)])
+            .range([height, 0]);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x))
+            .append("text")
+            .attr("x", width / 2)
+            .attr("y", 40)
+            .attr("fill", "black")
+            .style("text-anchor", "middle")
+            .text("Mileage (km)");
+
+        svg.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -50)
+            .attr("x", -(height / 2))
+            .attr("fill", "black")
+            .style("text-anchor", "middle")
+            .text("Price (AED)");
+
+        svg.selectAll("circle")
+            .data(data)
+            .join("circle")
+                .attr("class", "point")
+                .attr("cx", d => x(d.mileage))
+                .attr("cy", d => y(d.price))
+                .attr("r", 6)
+                .style("fill", "#69b3a2")
+                .on("mouseover", function(event, d) {
+                    d3.select(this).transition().duration(200).style("fill", "#003f5c");
+                    tooltip.transition().duration(200).style("opacity", .9);
+                    tooltip.html(`Title: ${d.title}<br/>Price: ${d.price} AED<br/>Mileage: ${d.mileage} km<br/>Year: ${d.year}<br/>Spec: ${d.spec}`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.select(this).transition().duration(200).style("fill", "#69b3a2");
+                    tooltip.transition().duration(500).style("opacity", 0);
+                })
+                .on("click", function(event, d) {
+                    window.open(d.detailPageUrl, '_blank');
+                });
+        
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", -margin.top / 2)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .text("Car Price vs Mileage");
+    }
+
+    function renderPriceVsYearChart(data) {
+        document.getElementById('chart2').innerHTML = '';
+        const margin = {top: 40, right: 40, bottom: 60, left: 70};
+        const width = 800 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart2")
+            .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        const x = d3.scaleLinear()
+            .domain([d3.max(data, d => d.year), d3.min(data, d => d.year)])
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.price)])
+            .range([height, 0]);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickFormat(d3.format("d")))
+            .append("text")
+            .attr("x", width / 2)
+            .attr("y", 40)
+            .attr("fill", "black")
+            .style("text-anchor", "middle")
+            .text("Year");
+
+        svg.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -50)
+            .attr("x", -(height / 2))
+            .attr("fill", "black")
+            .style("text-anchor", "middle")
+            .text("Price (AED)");
+
+        svg.selectAll("circle")
+            .data(data)
+            .join("circle")
+                .attr("class", "point")
+                .attr("cx", d => x(d.year))
+                .attr("cy", d => y(d.price))
+                .attr("r", 6)
+                .style("fill", "#69b3a2")
+                .on("mouseover", function(event, d) {
+                    d3.select(this).transition().duration(200).style("fill", "#003f5c");
+                    tooltip.transition().duration(200).style("opacity", .9);
+                    tooltip.html(`Title: ${d.title}<br/>Price: ${d.price} AED<br/>Mileage: ${d.mileage} km<br/>Year: ${d.year}<br/>Spec: ${d.spec}`)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.select(this).transition().duration(200).style("fill", "#69b3a2");
+                    tooltip.transition().duration(500).style("opacity", 0);
+                })
+                .on("click", function(event, d) {
+                    window.open(d.detailPageUrl, '_blank');
+                });
+
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", -margin.top / 2)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .text("Car Price vs Year");
+    }
+
+    const updateBadges = () => {
+        badgesContainer.innerHTML = '';
+        let hasFilters = false;
+        filters.makes.forEach(make => { hasFilters = true; const badge = createBadge(`Make: ${make}`, () => { filters.makes.delete(make); document.querySelector(`#make-dropdown input[value="${make}"]`).checked = false; applyFilters(); }); badgesContainer.appendChild(badge); });
+        if (filters.year) { hasFilters = true; const badge = createBadge(`Min Year: ${filters.year}`, () => { filters.year = null; applyFilters(); }); badgesContainer.appendChild(badge); }
+        if (filters.price.min) { hasFilters = true; const badge = createBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }); badgesContainer.appendChild(badge); }
+        if (filters.price.max) { hasFilters = true; const badge = createBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }); badgesContainer.appendChild(badge); }
+        if (!hasFilters) { badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>'; }
+    };
+
+    const createBadge = (text, removeCallback) => {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-primary me-2';
+        badge.innerHTML = `${text} <button type="button" class="btn-close btn-close-white ms-2" aria-label="Close"></button>`;
+        badge.querySelector('button').onclick = removeCallback;
+        return badge;
+    };
+
+    const populateMakeFilter = () => {
+        const makes = [...new Set(tableData.map(item => item.make))].sort();
+        makes.forEach(make => { const li = document.createElement('li'); li.innerHTML = `<label class="dropdown-item"><input class="form-check-input me-2" type="checkbox" value="${make}">${make}</label>`; makeDropdownList.appendChild(li); });
+    };
+
+    const populateYearFilter = () => {
+        const years = [...new Set(tableData.map(item => item.year))].sort((a, b) => b - a);
+        years.forEach(year => { const li = document.createElement('li'); li.innerHTML = `<a class="dropdown-item" href="#" data-value="${year}">${year}</a>`; yearDropdown.appendChild(li); });
+    };
+
+    const populatePriceFilters = () => {
+        const prices = tableData.map(item => item.price).filter(p => p);
+        if (prices.length === 0) return;
+        const minPrice = Math.min(...prices); const maxPrice = Math.max(...prices); const range = maxPrice - minPrice; const step = Math.pow(10, Math.floor(Math.log10(range / 5))) || 5000;
+        const priceOptions = new Set();
+        for (let i = Math.floor(minPrice / step) * step; i <= maxPrice; i += step) { priceOptions.add(i); }
+        priceOptions.add(maxPrice);
+        priceOptions.forEach(price => { const optionHTML = `<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`; minPriceDropdown.innerHTML += optionHTML; maxPriceDropdown.innerHTML += optionHTML; });
+    };
+
+    const setupEventListeners = () => {
+        document.querySelectorAll('.dropdown').forEach(dropdownElement => { const dropdown = new bootstrap.Dropdown(dropdownElement.querySelector('.dropdown-toggle')); dropdownElement.addEventListener('mouseenter', () => dropdown.show()); dropdownElement.addEventListener('mouseleave', () => dropdown.hide()); });
+        document.querySelectorAll('#data-table thead th').forEach(header => { if (header.style.cursor === 'pointer') { header.setAttribute('data-original-text', header.textContent); header.addEventListener('click', () => { const columnKey = header.getAttribute('data-original-text'); const currentDirection = sortState[columnKey] || 'desc'; const newDirection = currentDirection === 'asc' ? 'desc' : 'asc'; sortState = { [columnKey]: newDirection }; document.querySelectorAll('#data-table thead th[data-original-text]').forEach(th => { th.textContent = th.getAttribute('data-original-text'); }); header.textContent = `${columnKey} ${newDirection === 'asc' ? '▲' : '▼'}`; const sortedData = [...tableData].sort((a, b) => { if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1; if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1; return 0; }); renderTable(sortedData); }); } });
+        makeDropdownList.addEventListener('change', (e) => { if (e.target.type === 'checkbox') { if (e.target.checked) filters.makes.add(e.target.value); else filters.makes.delete(e.target.value); applyFilters(); } });
+        document.getElementById('make-search').addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); document.querySelectorAll('#make-dropdown ul li').forEach(li => { const label = li.querySelector('label').textContent.toLowerCase(); li.style.display = label.includes(searchTerm) ? '' : 'none'; }); });
+        yearDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.year = Number(e.target.getAttribute('data-value')); applyFilters(); } });
+        minPriceDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.price.min = Number(e.target.getAttribute('data-value')); applyFilters(); } });
+        maxPriceDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.price.max = Number(e.target.getAttribute('data-value')); applyFilters(); } });
+    };
+
+    tableData = jsonData.Car;
+    populateMakeFilter();
+    populateYearFilter();
+    populatePriceFilters();
+    setupEventListeners();
+    applyFilters();
+});
+const jsonData = {
         "Car": [
             {
 		"listingId" : "10a87fe8678341f88034645ca690e475",
@@ -2228,274 +2497,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ]
     };
-    
-    const filters = { makes: new Set(), year: null, price: { min: null, max: null } };
-    let tableData = [];
-    let sortState = {};
-
-    const tableBody = document.querySelector('#data-table tbody');
-    const badgesContainer = document.getElementById('selected-filters-container');
-    const makeDropdownList = document.querySelector('#make-dropdown ul');
-    const yearDropdown = document.getElementById('year-dropdown');
-    const minPriceDropdown = document.getElementById('min-price-dropdown');
-    const maxPriceDropdown = document.getElementById('max-price-dropdown');
-
-    const applyFilters = () => {
-        let filteredData = [...tableData];
-        if (filters.makes.size > 0) { filteredData = filteredData.filter(item => filters.makes.has(item.make)); }
-        if (filters.year) { filteredData = filteredData.filter(item => item.year >= filters.year); }
-        if (filters.price.min) { filteredData = filteredData.filter(item => item.price >= filters.price.min); }
-        if (filters.price.max) { filteredData = filteredData.filter(item => item.price <= filters.price.max); }
-        renderTable(filteredData);
-        renderPriceVsMileageChart(filteredData);
-        renderPriceVsYearChart(filteredData);
-        updateBadges();
-    };
-
-    const renderTable = (data) => {
-        tableBody.innerHTML = '';
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="px-3 py-2 text-nowrap">${row.listingId || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.make || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.model || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.year || ''}</td>
-                <td class="px-3 py-2 text-nowrap">$${row.price ? row.price.toLocaleString() : ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.mileage ? row.mileage.toLocaleString() : ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.title || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.bodyType || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.engineCapacity || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.horsepower || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.transmissionType || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.cylinders || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.interiorColor || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.exteriorColor || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.doors || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.seatingCapacity || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.trim || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.warranty || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.fuelType || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.spec || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.sellerType || ''}</td>
-                <td class="px-3 py-2 text-nowrap">${row.location || ''}</td>
-                <td class="px-3 py-2 text-nowrap"><a href="${row.detailPageUrl}" target="_blank">View</a></td>
-            `;
-            tableBody.appendChild(tr);
-        });
-    };
-
-    function renderPriceVsMileageChart(data) {
-        document.getElementById('chart1').innerHTML = '';
-        const margin = {top: 40, right: 40, bottom: 60, left: 70};
-        const width = 800 - margin.left - margin.right;
-        const height = 500 - margin.top - margin.bottom;
-
-        const svg = d3.select("#chart1")
-            .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        const tooltip = d3.select("body")
-            .append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
-
-        const x = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.mileage)])
-            .range([0, width]);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.price)])
-            .range([height, 0]);
-
-        svg.append("g")
-            .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x))
-            .append("text")
-            .attr("x", width / 2)
-            .attr("y", 40)
-            .attr("fill", "black")
-            .style("text-anchor", "middle")
-            .text("Mileage (km)");
-
-        svg.append("g")
-            .call(d3.axisLeft(y))
-            .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", -50)
-            .attr("x", -(height / 2))
-            .attr("fill", "black")
-            .style("text-anchor", "middle")
-            .text("Price (AED)");
-
-        svg.selectAll("circle")
-            .data(data)
-            .join("circle")
-                .attr("class", "point")
-                .attr("cx", d => x(d.mileage))
-                .attr("cy", d => y(d.price))
-                .attr("r", 6)
-                .style("fill", "#69b3a2")
-                .on("mouseover", function(event, d) {
-                    d3.select(this).transition().duration(200).style("fill", "#003f5c");
-                    tooltip.transition().duration(200).style("opacity", .9);
-                    tooltip.html(`Title: ${d.title}<br/>Price: ${d.price} AED<br/>Mileage: ${d.mileage} km<br/>Year: ${d.year}<br/>Spec: ${d.spec}`)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    d3.select(this).transition().duration(200).style("fill", "#69b3a2");
-                    tooltip.transition().duration(500).style("opacity", 0);
-                })
-                .on("click", function(event, d) {
-                    window.open(d.detailPageUrl, '_blank');
-                });
-        
-        svg.append("text")
-            .attr("x", width / 2)
-            .attr("y", -margin.top / 2)
-            .attr("text-anchor", "middle")
-            .style("font-size", "16px")
-            .style("font-weight", "bold")
-            .text("Car Price vs Mileage");
-    }
-
-    function renderPriceVsYearChart(data) {
-        document.getElementById('chart2').innerHTML = '';
-        const margin = {top: 40, right: 40, bottom: 60, left: 70};
-        const width = 800 - margin.left - margin.right;
-        const height = 500 - margin.top - margin.bottom;
-
-        const svg = d3.select("#chart2")
-            .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        const tooltip = d3.select("body")
-            .append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
-
-        const x = d3.scaleLinear()
-            .domain([d3.max(data, d => d.year), d3.min(data, d => d.year)])
-            .range([0, width]);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.price)])
-            .range([height, 0]);
-
-        svg.append("g")
-            .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x).tickFormat(d3.format("d")))
-            .append("text")
-            .attr("x", width / 2)
-            .attr("y", 40)
-            .attr("fill", "black")
-            .style("text-anchor", "middle")
-            .text("Year");
-
-        svg.append("g")
-            .call(d3.axisLeft(y))
-            .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", -50)
-            .attr("x", -(height / 2))
-            .attr("fill", "black")
-            .style("text-anchor", "middle")
-            .text("Price (AED)");
-
-        svg.selectAll("circle")
-            .data(data)
-            .join("circle")
-                .attr("class", "point")
-                .attr("cx", d => x(d.year))
-                .attr("cy", d => y(d.price))
-                .attr("r", 6)
-                .style("fill", "#69b3a2")
-                .on("mouseover", function(event, d) {
-                    d3.select(this).transition().duration(200).style("fill", "#003f5c");
-                    tooltip.transition().duration(200).style("opacity", .9);
-                    tooltip.html(`Title: ${d.title}<br/>Price: ${d.price} AED<br/>Mileage: ${d.mileage} km<br/>Year: ${d.year}<br/>Spec: ${d.spec}`)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    d3.select(this).transition().duration(200).style("fill", "#69b3a2");
-                    tooltip.transition().duration(500).style("opacity", 0);
-                })
-                .on("click", function(event, d) {
-                    window.open(d.detailPageUrl, '_blank');
-                });
-
-        svg.append("text")
-            .attr("x", width / 2)
-            .attr("y", -margin.top / 2)
-            .attr("text-anchor", "middle")
-            .style("font-size", "16px")
-            .style("font-weight", "bold")
-            .text("Car Price vs Year");
-    }
-
-    const updateBadges = () => {
-        badgesContainer.innerHTML = '';
-        let hasFilters = false;
-        filters.makes.forEach(make => { hasFilters = true; const badge = createBadge(`Make: ${make}`, () => { filters.makes.delete(make); document.querySelector(`#make-dropdown input[value="${make}"]`).checked = false; applyFilters(); }); badgesContainer.appendChild(badge); });
-        if (filters.year) { hasFilters = true; const badge = createBadge(`Min Year: ${filters.year}`, () => { filters.year = null; applyFilters(); }); badgesContainer.appendChild(badge); }
-        if (filters.price.min) { hasFilters = true; const badge = createBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }); badgesContainer.appendChild(badge); }
-        if (filters.price.max) { hasFilters = true; const badge = createBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }); badgesContainer.appendChild(badge); }
-        if (!hasFilters) { badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>'; }
-    };
-
-    const createBadge = (text, removeCallback) => {
-        const badge = document.createElement('span');
-        badge.className = 'badge bg-primary me-2';
-        badge.innerHTML = `${text} <button type="button" class="btn-close btn-close-white ms-2" aria-label="Close"></button>`;
-        badge.querySelector('button').onclick = removeCallback;
-        return badge;
-    };
-
-    const populateMakeFilter = () => {
-        const makes = [...new Set(tableData.map(item => item.make))].sort();
-        makes.forEach(make => { const li = document.createElement('li'); li.innerHTML = `<label class="dropdown-item"><input class="form-check-input me-2" type="checkbox" value="${make}">${make}</label>`; makeDropdownList.appendChild(li); });
-    };
-
-    const populateYearFilter = () => {
-        const years = [...new Set(tableData.map(item => item.year))].sort((a, b) => b - a);
-        years.forEach(year => { const li = document.createElement('li'); li.innerHTML = `<a class="dropdown-item" href="#" data-value="${year}">${year}</a>`; yearDropdown.appendChild(li); });
-    };
-
-    const populatePriceFilters = () => {
-        const prices = tableData.map(item => item.price).filter(p => p);
-        if (prices.length === 0) return;
-        const minPrice = Math.min(...prices); const maxPrice = Math.max(...prices); const range = maxPrice - minPrice; const step = Math.pow(10, Math.floor(Math.log10(range / 5))) || 5000;
-        const priceOptions = new Set();
-        for (let i = Math.floor(minPrice / step) * step; i <= maxPrice; i += step) { priceOptions.add(i); }
-        priceOptions.add(maxPrice);
-        priceOptions.forEach(price => { const optionHTML = `<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`; minPriceDropdown.innerHTML += optionHTML; maxPriceDropdown.innerHTML += optionHTML; });
-    };
-
-    const setupEventListeners = () => {
-        document.querySelectorAll('.dropdown').forEach(dropdownElement => { const dropdown = new bootstrap.Dropdown(dropdownElement.querySelector('.dropdown-toggle')); dropdownElement.addEventListener('mouseenter', () => dropdown.show()); dropdownElement.addEventListener('mouseleave', () => dropdown.hide()); });
-        document.querySelectorAll('#data-table thead th').forEach(header => { if (header.style.cursor === 'pointer') { header.setAttribute('data-original-text', header.textContent); header.addEventListener('click', () => { const columnKey = header.getAttribute('data-original-text'); const currentDirection = sortState[columnKey] || 'desc'; const newDirection = currentDirection === 'asc' ? 'desc' : 'asc'; sortState = { [columnKey]: newDirection }; document.querySelectorAll('#data-table thead th[data-original-text]').forEach(th => { th.textContent = th.getAttribute('data-original-text'); }); header.textContent = `${columnKey} ${newDirection === 'asc' ? '▲' : '▼'}`; const sortedData = [...tableData].sort((a, b) => { if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1; if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1; return 0; }); renderTable(sortedData); }); } });
-        makeDropdownList.addEventListener('change', (e) => { if (e.target.type === 'checkbox') { if (e.target.checked) filters.makes.add(e.target.value); else filters.makes.delete(e.target.value); applyFilters(); } });
-        document.getElementById('make-search').addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); document.querySelectorAll('#make-dropdown ul li').forEach(li => { const label = li.querySelector('label').textContent.toLowerCase(); li.style.display = label.includes(searchTerm) ? '' : 'none'; }); });
-        yearDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.year = Number(e.target.getAttribute('data-value')); applyFilters(); } });
-        minPriceDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.price.min = Number(e.target.getAttribute('data-value')); applyFilters(); } });
-        maxPriceDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.price.max = Number(e.target.getAttribute('data-value')); applyFilters(); } });
-    };
-
-    tableData = jsonData.Car;
-    populateMakeFilter();
-    populateYearFilter();
-    populatePriceFilters();
-    setupEventListeners();
-    applyFilters();
-});
 </script>
 
 </body>
