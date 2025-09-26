@@ -28,35 +28,18 @@
             <div class="d-flex align-items-center h-100">
                 <div class="vr mx-4"></div>
                 <div class="d-flex align-items-center gap-4">
-                    <!-- Model Dropdown -->
+                    <!-- Make Dropdown -->
                     <div class="dropdown">
-                        <button id="model-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Model
+                        <button id="make-dropdown-button" class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Make
                         </button>
-                        <div id="model-dropdown" class="dropdown-menu p-3" style="width: 280px; z-index: 1030;">
+                        <div id="make-dropdown" class="dropdown-menu p-3" style="width: 280px; z-index: 1030;">
                             <div class="mb-3">
-                                <label for="model-search" class="visually-hidden">Search</label>
-                                <input type="text" id="model-search" class="form-control" placeholder="Search model">
+                                <label for="make-search" class="visually-hidden">Search</label>
+                                <input type="text" id="make-search" class="form-control" placeholder="Search make">
                             </div>
-                            <ul class="list-unstyled overflow-auto" style="max-height: 200px;" aria-labelledby="model-dropdown-button">
-                                <li>
-                                    <label class="dropdown-item">
-                                        <input class="form-check-input me-2" type="checkbox" value="Toyota" id="checkbox-item-1">
-                                        Toyota
-                                    </label>
-                                </li>
-                                <li>
-                                    <label class="dropdown-item">
-                                        <input class="form-check-input me-2" type="checkbox" value="Honda" id="checkbox-item-2">
-                                        Honda
-                                    </label>
-                                </li>
-                                <li>
-                                    <label class="dropdown-item">
-                                        <input class="form-check-input me-2" type="checkbox" value="Ford" id="checkbox-item-3">
-                                        Ford
-                                    </label>
-                                </li>
+                            <ul class="list-unstyled overflow-auto" style="max-height: 200px;" aria-labelledby="make-dropdown-button">
+                                <!-- Makes will be dynamically inserted here -->
                             </ul>
                         </div>
                     </div>
@@ -112,16 +95,34 @@
 
     <!-- Table Section -->
     <div class="card shadow-sm" style="flex-grow: 3; overflow: hidden; position: relative;">
-        <div class="overflow-auto h-100">
-            <table id="data-table" class="table table-striped table-hover">
+        <div class="overflow-auto h-100 table-responsive">
+            <table id="data-table" class="table table-striped table-hover table-sm">
                 <thead class="table-light sticky-top">
+                    <!-- 1. MODIFIED SECTION: Added all table headers -->
                     <tr>
-                        <th scope="col" class="px-3 py-2" style="cursor: pointer;">listingId</th>
-                        <th scope="col" class="px-3 py-2" style="cursor: pointer;">make</th>
-                        <th scope="col" class="px-3 py-2" style="cursor: pointer;">model</th>
-                        <th scope="col" class="px-3 py-2" style="cursor: pointer;">year</th>
-                        <th scope="col" class="px-3 py-2" style="cursor: pointer;">price</th>
-                        <th scope="col" class="px-3 py-2">detailPageUrl</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap" style="cursor: pointer;">listingId</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap" style="cursor: pointer;">make</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap" style="cursor: pointer;">model</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap" style="cursor: pointer;">year</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap" style="cursor: pointer;">price</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap" style="cursor: pointer;">mileage</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">title</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">bodyType</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">engineCapacity</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">horsepower</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">transmissionType</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">cylinders</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">interiorColor</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">exteriorColor</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">doors</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">seatingCapacity</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">trim</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">warranty</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">fuelType</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">spec</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">sellerType</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">location</th>
+                        <th scope="col" class="px-3 py-2 text-nowrap">detailPageUrl</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -139,87 +140,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------------------
     // --- 1. STATE MANAGEMENT & INITIALIZATION ---
     // -------------------------------------------------------------------------
-
-    // Central object to hold all active filters
-    const filters = {
-        models: new Set(),
-        year: null,
-        price: { min: null, max: null }
+    
+    const jsonData = {
+        "Car": [
+            { "listingId": "10a87fe8678341f88034645ca690e475", "make": "Nissan", "model": "Kicks", "year": 2019, "mileage": 118000, "price": 26500, "title": "Nissan Kicks SV", "isPremium": null, "detailPageUrl": "https://dubai.dubizzle.com/motors/used-cars/nissan/kicks/2025/9/16/nissan-kicks-2019-gcc-16-2-215---10a87fe8678341f88034645ca690e475/", "bodyType": "SUV", "engineCapacity": "1000 - 1499 cc", "horsepower": "100 - 199 HP", "transmissionType": "Automatic Transmission", "cylinders": "4", "interiorColor": "Black", "exteriorColor": "Black", "doors": "4 door", "seatingCapacity": "5 Seater", "trim": "SV", "warranty": "No", "fuelType": "Petrol", "motorsTrim": "SV", "spec": "GCC", "sellerType": "Owner", "location": "Al Qusais, Dubai", "neighbourhood": "Al Qusais", "isNegotiable": 0, "thumbnailUrl": "https://static.dubizzle.com/frontend-web/static-resources/assets/images/share-white-border.svg", "vehicleReference": "2465/16561595", "isVerifiedUser": null, "createdAt": 1758031184000, "added": 1758031032000, "last_updated": 1758396024100 },
+            { "listingId": "4d85f56fe0554d04b68b078b41c8cf84", "make": "Nissan", "model": "Kicks", "year": 2018, "mileage": 108000, "price": 27000, "title": "Nissan Kicks SL", "isPremium": null, "detailPageUrl": "https://dubai.dubizzle.com/motors/used-cars/nissan/kicks/2025/9/18/2018-nissan-kicks-16l-4-cylinder-2-382---4d85f56fe0554d04b68b078b41c8cf84/", "bodyType": "SUV", "engineCapacity": "1500 - 1999 cc", "horsepower": "100 - 199 HP", "transmissionType": "Automatic Transmission", "cylinders": "4", "interiorColor": "Black", "exteriorColor": "Grey", "doors": "5+ doors", "seatingCapacity": "5 Seater", "trim": "SL", "warranty": "No", "fuelType": "Petrol", "motorsTrim": "SL", "spec": "GCC", "sellerType": "Owner", "location": "Deira, Dubai", "neighbourhood": "Al Muraqqabat", "isNegotiable": 0, "thumbnailUrl": "https://static.dubizzle.com/frontend-web/static-resources/assets/images/share-white-border.svg", "vehicleReference": "2465/16563597", "isVerifiedUser": 1, "createdAt": 1758177943000, "added": 1758178252000, "last_updated": 1758396024100 },
+            { "listingId": "3d3bf1f29a64416f8881e63658844742", "make": "Nissan", "model": "Kicks", "year": 2020, "mileage": 150000, "price": 27000, "title": "Nissan Kicks S", "isPremium": null, "detailPageUrl": "https://dubai.dubizzle.com/motors/used-cars/nissan/kicks/2025/9/9/nissan-kicks-2020-model-16l-gcc-space-2-280---3d3bf1f29a64416f8881e63658844742/", "bodyType": "SUV", "engineCapacity": "1000 - 1499 cc", "horsepower": "200 - 299 HP", "transmissionType": "Automatic Transmission", "cylinders": "4", "interiorColor": "Grey", "exteriorColor": "White", "doors": "4 door", "seatingCapacity": "5 Seater", "trim": "S", "warranty": "No", "fuelType": "Petrol", "motorsTrim": "S", "spec": "GCC", "sellerType": "Dealer", "location": "Ras Al Khor, Dubai", "neighbourhood": "Ras Al Khor Industrial 2", "isNegotiable": 0, "thumbnailUrl": "https://static.dubizzle.com/frontend-web/static-resources/assets/images/share-white-border.svg", "vehicleReference": "2465/16553099", "isVerifiedUser": null, "createdAt": 1757446563000, "added": 1758092699000, "last_updated": 1758396024100 },
+            { "listingId": "489eed7f8217487698ebd99b3ef9c4ef", "make": "Nissan", "model": "Kicks", "year": 2020, "mileage": 143000, "price": 28500, "title": "Nissan Kicks S", "isPremium": null, "detailPageUrl": "https://dubai.dubizzle.com/motors/used-cars/nissan/kicks/2025/9/20/nissan-kicks-gcc-2020-16l-very-clean-2-152---489eed7f8217487698ebd99b3ef9c4ef/", "bodyType": "SUV", "engineCapacity": "1500 - 1999 cc", "horsepower": "Unknown", "transmissionType": "Automatic Transmission", "cylinders": "4", "interiorColor": "Grey", "exteriorColor": "White", "doors": "4 door", "seatingCapacity": "5 Seater", "trim": "S", "warranty": "No", "fuelType": "Petrol", "motorsTrim": "S", "spec": "GCC", "sellerType": "Owner", "location": "Al Qusais, Dubai", "neighbourhood": "Al Qusais", "isNegotiable": 0, "thumbnailUrl": "https://static.dubizzle.com/frontend-web/static-resources/assets/images/share-white-border.svg", "vehicleReference": "2465/16567034", "isVerifiedUser": null, "createdAt": 1758386665000, "added": 1758386691000, "last_updated": 1758396024100 },
+            { "listingId": "e3b4b54ed4a243b8bd89ab3199a7b07f", "make": "Nissan", "model": "Kicks", "year": 2018, "mileage": 66300, "price": 28500, "title": "Nissan Kicks Other", "isPremium": null, "detailPageUrl": "https://dubai.dubizzle.com/motors/used-cars/nissan/kicks/2025/9/9/nissan-kicks-2018-gcc-specification-2-442---e3b4b54ed4a243b8bd89ab3199a7b07f/", "bodyType": "Sedan", "engineCapacity": "Unknown", "horsepower": "Unknown", "transmissionType": "Automatic Transmission", "cylinders": "4", "interiorColor": "Green", "exteriorColor": "White", "doors": "4 door", "seatingCapacity": "5 Seater", "trim": "Other", "warranty": "Does not apply", "fuelType": "Petrol", "motorsTrim": "Other", "spec": "GCC", "sellerType": "Owner", "location": "Al Qusais, Dubai", "neighbourhood": "Al Qusais 2", "isNegotiable": 0, "thumbnailUrl": "https://static.dubizzle.com/frontend-web/static-resources/assets/images/share-white-border.svg", "vehicleReference": "2465/16552611", "isVerifiedUser": null, "createdAt": 1757422614000, "added": 1757422469000, "last_updated": 1758396024100 }
+        ]
     };
-
-    // Store the original dataset and the current sort state
+    
+    const filters = { makes: new Set(), year: null, price: { min: null, max: null } };
     let tableData = [];
     let sortState = {};
 
-    // DOM element references
     const tableBody = document.querySelector('#data-table tbody');
     const badgesContainer = document.getElementById('selected-filters-container');
+    const makeDropdownList = document.querySelector('#make-dropdown ul');
     const yearDropdown = document.getElementById('year-dropdown');
     const minPriceDropdown = document.getElementById('min-price-dropdown');
     const maxPriceDropdown = document.getElementById('max-price-dropdown');
 
-
-    // -------------------------------------------------------------------------
-    // --- 2. CORE LOGIC (DATA HANDLING & FILTERING) ---
-    // -------------------------------------------------------------------------
-
-    /**
-     * Applies all active filters from the 'filters' object to the master 'tableData'
-     * and re-renders the table.
-     */
     const applyFilters = () => {
         let filteredData = [...tableData];
-
-        // Apply model filter
-        if (filters.models.size > 0) {
-            filteredData = filteredData.filter(item => filters.models.has(item.make));
-        }
-
-        // Apply minimum year filter
-        if (filters.year) {
-            filteredData = filteredData.filter(item => item.year >= filters.year);
-        }
-
-        // Apply minimum price filter
-        if (filters.price.min) {
-            filteredData = filteredData.filter(item => item.price >= filters.price.min);
-        }
-
-        // Apply maximum price filter
-        if (filters.price.max) {
-            filteredData = filteredData.filter(item => item.price <= filters.price.max);
-        }
-
+        if (filters.makes.size > 0) { filteredData = filteredData.filter(item => filters.makes.has(item.make)); }
+        if (filters.year) { filteredData = filteredData.filter(item => item.year >= filters.year); }
+        if (filters.price.min) { filteredData = filteredData.filter(item => item.price >= filters.price.min); }
+        if (filters.price.max) { filteredData = filteredData.filter(item => item.price <= filters.price.max); }
         renderTable(filteredData);
         updateBadges();
     };
-
-    /**
-     * Generates an array of dummy data for the table.
-     * @param {number} count - The number of rows to generate.
-     * @returns {Array<Object>}
-     */
-    const generateDummyData = (count) => {
-        const data = [];
-        const makes = ['Toyota', 'Honda', 'Ford'];
-        for (let i = 1; i <= count; i++) {
-            const make = makes[Math.floor(Math.random() * makes.length)];
-            data.push({
-                listingId: `ID-${1000 + i}`,
-                make: make,
-                model: `${make} Model ${i}`,
-                year: 2015 + Math.floor(Math.random() * 11),
-                price: 5000 + Math.floor(Math.random() * 25000),
-                detailPageUrl: `https://example.com/listing/${1000 + i}`
-            });
-        }
-        return data;
-    };
-
-
-    // -------------------------------------------------------------------------
-    // --- 3. UI RENDERING FUNCTIONS ---
-    // -------------------------------------------------------------------------
 
     /**
      * Clears and re-renders the table body with the provided data.
@@ -229,78 +180,46 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBody.innerHTML = '';
         data.forEach(row => {
             const tr = document.createElement('tr');
+            // 2. MODIFIED SECTION: Added all data cells to match the headers
             tr.innerHTML = `
-                <td class="px-3 py-2">${row.listingId}</td>
-                <td class="px-3 py-2">${row.make}</td>
-                <td class="px-3 py-2">${row.model}</td>
-                <td class="px-3 py-2">${row.year}</td>
-                <td class="px-3 py-2">$${row.price.toLocaleString()}</td>
-                <td class="px-3 py-2"><a href="${row.detailPageUrl}" target="_blank">View</a></td>
+                <td class="px-3 py-2 text-nowrap">${row.listingId || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.make || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.model || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.year || ''}</td>
+                <td class="px-3 py-2 text-nowrap">$${row.price ? row.price.toLocaleString() : ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.mileage ? row.mileage.toLocaleString() : ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.title || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.bodyType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.engineCapacity || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.horsepower || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.transmissionType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.cylinders || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.interiorColor || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.exteriorColor || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.doors || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.seatingCapacity || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.trim || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.warranty || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.fuelType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.spec || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.sellerType || ''}</td>
+                <td class="px-3 py-2 text-nowrap">${row.location || ''}</td>
+                <td class="px-3 py-2 text-nowrap"><a href="${row.detailPageUrl}" target="_blank">View</a></td>
             `;
             tableBody.appendChild(tr);
         });
     };
 
-    /**
-     * Updates the filter badges display based on the current state of the 'filters' object.
-     */
     const updateBadges = () => {
         badgesContainer.innerHTML = '';
         let hasFilters = false;
-
-        // Model badges
-        filters.models.forEach(model => {
-            hasFilters = true;
-            const badge = createBadge(`Model: ${model}`, () => {
-                filters.models.delete(model);
-                document.querySelector(`#model-dropdown input[value="${model}"]`).checked = false;
-                applyFilters();
-            });
-            badgesContainer.appendChild(badge);
-        });
-        
-        // Year badge
-        if (filters.year) {
-            hasFilters = true;
-            const badge = createBadge(`Min Year: ${filters.year}`, () => {
-                filters.year = null;
-                applyFilters();
-            });
-            badgesContainer.appendChild(badge);
-        }
-        
-        // Min price badge
-        if (filters.price.min) {
-            hasFilters = true;
-            const badge = createBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => {
-                filters.price.min = null;
-                applyFilters();
-            });
-            badgesContainer.appendChild(badge);
-        }
-
-        // Max price badge
-        if (filters.price.max) {
-            hasFilters = true;
-            const badge = createBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => {
-                filters.price.max = null;
-                applyFilters();
-            });
-            badgesContainer.appendChild(badge);
-        }
-
-        // Display placeholder text if no filters are active
-        if (!hasFilters) {
-            badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>';
-        }
+        filters.makes.forEach(make => { hasFilters = true; const badge = createBadge(`Make: ${make}`, () => { filters.makes.delete(make); document.querySelector(`#make-dropdown input[value="${make}"]`).checked = false; applyFilters(); }); badgesContainer.appendChild(badge); });
+        if (filters.year) { hasFilters = true; const badge = createBadge(`Min Year: ${filters.year}`, () => { filters.year = null; applyFilters(); }); badgesContainer.appendChild(badge); }
+        if (filters.price.min) { hasFilters = true; const badge = createBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }); badgesContainer.appendChild(badge); }
+        if (filters.price.max) { hasFilters = true; const badge = createBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }); badgesContainer.appendChild(badge); }
+        if (!hasFilters) { badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>'; }
     };
 
-    /**
-     * Creates a Bootstrap badge component.
-     * @param {string} text - The text to display in the badge.
-     * @param {Function} removeCallback - The function to call when the badge's close button is clicked.
-     * @returns {HTMLElement}
-     */
     const createBadge = (text, removeCallback) => {
         const badge = document.createElement('span');
         badge.className = 'badge bg-primary me-2';
@@ -309,155 +228,41 @@ document.addEventListener('DOMContentLoaded', () => {
         return badge;
     };
 
+    const populateMakeFilter = () => {
+        const makes = [...new Set(tableData.map(item => item.make))].sort();
+        makes.forEach(make => { const li = document.createElement('li'); li.innerHTML = `<label class="dropdown-item"><input class="form-check-input me-2" type="checkbox" value="${make}">${make}</label>`; makeDropdownList.appendChild(li); });
+    };
 
-    // -------------------------------------------------------------------------
-    // --- 4. DYNAMIC FILTER POPULATION ---
-    // -------------------------------------------------------------------------
-
-    /**
-     * Populates the Min Year dropdown with options from the current year down to 2015.
-     */
     const populateYearFilter = () => {
-        const currentYear = new Date().getFullYear();
-        for (let year = currentYear; year >= 2015; year--) {
-            const li = document.createElement('li');
-            li.innerHTML = `<a class="dropdown-item" href="#" data-value="${year}">${year}</a>`;
-            yearDropdown.appendChild(li);
-        }
+        const years = [...new Set(tableData.map(item => item.year))].sort((a, b) => b - a);
+        years.forEach(year => { const li = document.createElement('li'); li.innerHTML = `<a class="dropdown-item" href="#" data-value="${year}">${year}</a>`; yearDropdown.appendChild(li); });
     };
 
-    /**
-     * Populates the Min and Max Price dropdowns with a predefined set of options.
-     */
     const populatePriceFilters = () => {
-        const priceOptions = [5000, 10000, 15000, 20000, 25000];
-        priceOptions.forEach(price => {
-            const optionHTML = `<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`;
-            minPriceDropdown.innerHTML += optionHTML;
-            maxPriceDropdown.innerHTML += optionHTML;
-        });
+        const prices = tableData.map(item => item.price).filter(p => p);
+        if (prices.length === 0) return;
+        const minPrice = Math.min(...prices); const maxPrice = Math.max(...prices); const range = maxPrice - minPrice; const step = Math.pow(10, Math.floor(Math.log10(range / 5))) || 5000;
+        const priceOptions = new Set();
+        for (let i = Math.floor(minPrice / step) * step; i <= maxPrice; i += step) { priceOptions.add(i); }
+        priceOptions.add(maxPrice);
+        priceOptions.forEach(price => { const optionHTML = `<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`; minPriceDropdown.innerHTML += optionHTML; maxPriceDropdown.innerHTML += optionHTML; });
     };
 
-
-    // -------------------------------------------------------------------------
-    // --- 5. EVENT LISTENERS ---
-    // -------------------------------------------------------------------------
-
-    /**
-     * Attaches all necessary event listeners for user interaction.
-     */
     const setupEventListeners = () => {
-
-        // Dropdown Hover Functionality
-        document.querySelectorAll('.dropdown').forEach(dropdownElement => {
-            const dropdown = new bootstrap.Dropdown(dropdownElement.querySelector('.dropdown-toggle'));
-
-            // Show dropdown on hover
-            dropdownElement.addEventListener('mouseenter', () => {
-                dropdown.show();
-            });
-
-            // Hide dropdown when mouse leaves
-            dropdownElement.addEventListener('mouseleave', () => {
-                dropdown.hide();
-            });
-        });
-
-        // Table Header Sorting Listener
-        document.querySelectorAll('#data-table thead th').forEach(header => {
-            // Store the original header text in a data attribute for reference
-            if (header.style.cursor === 'pointer') {
-                header.setAttribute('data-original-text', header.textContent);
-            
-                header.addEventListener('click', () => {
-                    // Use the original text as the key for sorting logic
-                    const columnKey = header.getAttribute('data-original-text');
-                    const currentDirection = sortState[columnKey] || 'desc';
-                    const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-                    sortState = { [columnKey]: newDirection };
-
-                    // --- Visual Indicator Logic ---
-                    // 1. Clear indicators from all other headers
-                    document.querySelectorAll('#data-table thead th[data-original-text]').forEach(th => {
-                        th.textContent = th.getAttribute('data-original-text');
-                    });
-
-                    // 2. Add the new indicator to the clicked header
-                    header.textContent = `${columnKey} ${newDirection === 'asc' ? '▲' : '▼'}`;
-                    // --- End of Visual Indicator Logic ---
-
-                    // Sort the data
-                    const sortedData = [...tableData].sort((a, b) => {
-                        if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1;
-                        if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1;
-                        return 0;
-                    });
-                    
-                    renderTable(sortedData);
-                });
-            }
-        });
-
-        // Model Filter Checkbox Listeners
-        document.querySelectorAll('#model-dropdown input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) filters.models.add(e.target.value);
-                else filters.models.delete(e.target.value);
-                applyFilters();
-            });
-        });
-
-        // Model Filter Search Input Listener
-        document.getElementById('model-search').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('#model-dropdown ul li').forEach(li => {
-                const label = li.querySelector('label').textContent.toLowerCase();
-                li.style.display = label.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        // Year Filter Dropdown Listener
-        yearDropdown.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (e.target.matches('a.dropdown-item')) {
-                filters.year = Number(e.target.getAttribute('data-value'));
-                applyFilters();
-            }
-        });
-        
-        // Min Price Filter Dropdown Listener
-        minPriceDropdown.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (e.target.matches('a.dropdown-item')) {
-                filters.price.min = Number(e.target.getAttribute('data-value'));
-                applyFilters();
-            }
-        });
-
-        // Max Price Filter Dropdown Listener
-        maxPriceDropdown.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (e.target.matches('a.dropdown-item')) {
-                filters.price.max = Number(e.target.getAttribute('data-value'));
-                applyFilters();
-            }
-        });
+        document.querySelectorAll('.dropdown').forEach(dropdownElement => { const dropdown = new bootstrap.Dropdown(dropdownElement.querySelector('.dropdown-toggle')); dropdownElement.addEventListener('mouseenter', () => dropdown.show()); dropdownElement.addEventListener('mouseleave', () => dropdown.hide()); });
+        document.querySelectorAll('#data-table thead th').forEach(header => { if (header.style.cursor === 'pointer') { header.setAttribute('data-original-text', header.textContent); header.addEventListener('click', () => { const columnKey = header.getAttribute('data-original-text'); const currentDirection = sortState[columnKey] || 'desc'; const newDirection = currentDirection === 'asc' ? 'desc' : 'asc'; sortState = { [columnKey]: newDirection }; document.querySelectorAll('#data-table thead th[data-original-text]').forEach(th => { th.textContent = th.getAttribute('data-original-text'); }); header.textContent = `${columnKey} ${newDirection === 'asc' ? '▲' : '▼'}`; const sortedData = [...tableData].sort((a, b) => { if (a[columnKey] < b[columnKey]) return newDirection === 'asc' ? -1 : 1; if (a[columnKey] > b[columnKey]) return newDirection === 'asc' ? 1 : -1; return 0; }); renderTable(sortedData); }); } });
+        makeDropdownList.addEventListener('change', (e) => { if (e.target.type === 'checkbox') { if (e.target.checked) filters.makes.add(e.target.value); else filters.makes.delete(e.target.value); applyFilters(); } });
+        document.getElementById('make-search').addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); document.querySelectorAll('#make-dropdown ul li').forEach(li => { const label = li.querySelector('label').textContent.toLowerCase(); li.style.display = label.includes(searchTerm) ? '' : 'none'; }); });
+        yearDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.year = Number(e.target.getAttribute('data-value')); applyFilters(); } });
+        minPriceDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.price.min = Number(e.target.getAttribute('data-value')); applyFilters(); } });
+        maxPriceDropdown.addEventListener('click', (e) => { e.preventDefault(); if (e.target.matches('a.dropdown-item')) { filters.price.max = Number(e.target.getAttribute('data-value')); applyFilters(); } });
     };
 
-
-    // -------------------------------------------------------------------------
-    // --- 6. INITIAL PAGE LOAD ---
-    // -------------------------------------------------------------------------
-    
-    // Dynamically populate filter options
+    tableData = jsonData.Car;
+    populateMakeFilter();
     populateYearFilter();
     populatePriceFilters();
-    
-    // Attach all event listeners
     setupEventListeners();
-
-    // Generate initial data and render the table
-    tableData = generateDummyData(50); // Increased count for better testing
     renderTable(tableData);
 });
 </script>
