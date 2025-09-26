@@ -205,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return multiply(multiply(xTxInv, xT), yMatrix).map(r=>r[0]);
     }
     
-    // --- CHART RENDERING FUNCTIONS ---
+        // --- CHART RENDERING FUNCTIONS (MODIFIED) ---
+
     function renderPriceVsMileageChart(data) {
         const container = document.getElementById('chart1');
         container.innerHTML = '';
@@ -236,7 +237,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let curves = [];
         const xDomain = x.domain(), xMin = xDomain[0], xMax = xDomain[1];
 
-        // Regressions
+        // --- ADDED/RESTORED REGRESSION LOGIC ---
+        
+        // Moving Average
+        const sortedForMA = [...validData].sort((a, b) => a.mileage - b.mileage);
+        const movingAverageData = [];
+        const windowSize = 5;
+        for (let i = 0; i < sortedForMA.length; i++) {
+            const start = Math.max(0, i - windowSize);
+            const end = Math.min(sortedForMA.length, i + windowSize + 1);
+            const windowData = sortedForMA.slice(start, end);
+            movingAverageData.push([d3.mean(windowData, d => d.mileage), d3.mean(windowData, d => d.price)]);
+        }
+        curves.push({ data: movingAverageData, color: "blue", dash: null, name: "Moving Average" });
+
+        // Other Regressions
         const xValues = validData.map(d=>d.mileage), yValues = validData.map(d=>d.price);
         const polyCoeff = polynomialRegression(xValues, yValues, 2);
         const expData = validData.map(d => ({x: d.mileage, y: Math.log(d.price)}));
@@ -287,7 +302,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let curves = [];
         const xDomain = d3.extent(validData, d => d.year), xMin = xDomain[0], xMax = xDomain[1];
 
-        // Regressions
+        // --- ADDED/RESTORED REGRESSION LOGIC ---
+
+        // Moving Average
+        const sortedForMA = [...validData].sort((a, b) => a.year - b.year);
+        const movingAverageData = [];
+        const windowSize = 5;
+        for (let i = 0; i < sortedForMA.length; i++) {
+            const start = Math.max(0, i - windowSize);
+            const end = Math.min(sortedForMA.length, i + windowSize + 1);
+            const windowData = sortedForMA.slice(start, end);
+            movingAverageData.push([d3.mean(windowData, d => d.year), d3.mean(windowData, d => d.price)]);
+        }
+        curves.push({ data: movingAverageData, color: "blue", dash: null, name: "Moving Average" });
+
+        // Other Regressions
         const xValues = validData.map(d => d.year), yValues = validData.map(d => d.price);
         const xMean = d3.mean(xValues);
         const centeredX = xValues.map(d => d - xMean);
