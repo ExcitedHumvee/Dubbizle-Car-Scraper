@@ -206,12 +206,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
         // --- CHART RENDERING FUNCTIONS (MODIFIED) ---
-
     function renderPriceVsMileageChart(data) {
         const container = document.getElementById('chart1');
         container.innerHTML = '';
-        const validData = data.filter(d => d.mileage != null && d.price != null);
-        if (validData.length < 2) { container.innerHTML = '<p class="text-center p-3">Not enough data to display chart.</p>'; return; }
+
+        // **MODIFIED SECTION START**
+        // Create a new dataset for the chart.
+        // 1. Filter out any cars that don't have a price.
+        // 2. Map the remaining data, creating new car objects where any null/undefined mileage is converted to 0.
+        const chartData = data
+            .filter(d => d.price != null) 
+            .map(d => ({
+                ...d, 
+                mileage: d.mileage == null ? 0 : d.mileage 
+            }));
+        // **MODIFIED SECTION END**
+
+        if (chartData.length < 2) { 
+            container.innerHTML = '<p class="text-center p-3">Not enough data to display chart.</p>'; 
+            return; 
+        }
 
         const bounds = container.getBoundingClientRect();
         const margin = {top: 40, right: 40, bottom: 60, left: 70};
@@ -220,15 +234,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const svg = d3.select("#chart1").append("svg").attr("width", '100%').attr("height", '100%').attr('viewBox', `0 0 ${bounds.width} ${450}`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
         
-        const x = d3.scaleLinear().domain([0, d3.max(validData, d => d.mileage)]).range([0, width]);
-        const y = d3.scaleLinear().domain([0, d3.max(validData, d => d.price)]).range([height, 0]);
+        const x = d3.scaleLinear().domain([0, d3.max(chartData, d => d.mileage)]).range([0, width]);
+        const y = d3.scaleLinear().domain([0, d3.max(chartData, d => d.price)]).range([height, 0]);
 
         svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x)).append("text").attr("x", width/2).attr("y", 40).attr("fill", "black").text("Mileage (km)");
         svg.append("g").call(d3.axisLeft(y)).append("text").attr("transform", "rotate(-90)").attr("y", -50).attr("x", -(height/2)).attr("fill", "black").text("Price (AED)");
 
         const tooltip = d3.select("body").selectAll(".tooltip").data([0]).join("div").attr("class", "tooltip").style("opacity", 0);
 
-        svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.mileage)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", "#69b3a2")
+        svg.selectAll("circle").data(chartData).join("circle").attr("class", "point").attr("cx", d => x(d.mileage)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", "#69b3a2")
             .on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED`).style("left", (e.pageX+10)+"px").style("top", (e.pageY-28)+"px"); })
             .on("mouseout", () => tooltip.transition().style("opacity", 0))
             .on("click", (e, d) => window.open(d.detailPageUrl, '_blank'));
@@ -236,11 +250,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const line = d3.line().x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
         let curves = [];
         const xDomain = x.domain(), xMin = xDomain[0], xMax = xDomain[1];
-
-        // --- ADDED/RESTORED REGRESSION LOGIC ---
         
         // Moving Average
-        const sortedForMA = [...validData].sort((a, b) => a.mileage - b.mileage);
+        const sortedForMA = [...chartData].sort((a, b) => a.mileage - b.mileage);
         const movingAverageData = [];
         const windowSize = 5;
         for (let i = 0; i < sortedForMA.length; i++) {
@@ -252,11 +264,11 @@ document.addEventListener('DOMContentLoaded', () => {
         curves.push({ data: movingAverageData, color: "blue", dash: null, name: "Moving Average" });
 
         // Other Regressions
-        const xValues = validData.map(d=>d.mileage), yValues = validData.map(d=>d.price);
+        const xValues = chartData.map(d=>d.mileage), yValues = chartData.map(d=>d.price);
         const polyCoeff = polynomialRegression(xValues, yValues, 2);
-        const expData = validData.map(d => ({x: d.mileage, y: Math.log(d.price)}));
+        const expData = chartData.map(d => ({x: d.mileage, y: Math.log(d.price)}));
         const expCoeff = polynomialRegression(expData.map(d=>d.x), expData.map(d=>d.y), 1);
-        const powerData = validData.filter(d => d.mileage > 0 && d.price > 0).map(d => ({x: Math.log(d.mileage), y: Math.log(d.price)}));
+        const powerData = chartData.filter(d => d.mileage > 0 && d.price > 0).map(d => ({x: Math.log(d.mileage), y: Math.log(d.price)}));
         const powerCoeff = polynomialRegression(powerData.map(d=>d.x), powerData.map(d=>d.y), 1);
         
         const curvePoints = Array.from({length: 101}, (_, i) => xMin + (i/100) * (xMax - xMin));
@@ -271,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         svg.append("text").attr("x", width / 2).attr("y", -margin.top / 2).attr("text-anchor", "middle").style("font-size", "16px").style("font-weight", "bold").text("Car Price vs Mileage");
     }
-
+    
     function renderPriceVsYearChart(data) {
         const container = document.getElementById('chart2');
         container.innerHTML = '';
