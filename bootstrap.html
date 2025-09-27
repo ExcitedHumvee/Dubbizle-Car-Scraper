@@ -81,12 +81,12 @@
                     <table id="data-table" class="table table-striped table-hover table-sm">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th scope="col" class="px-3 py-2 text-nowrap" style="cursor:pointer;">listingId</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap" style="cursor:pointer;">make</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap" style="cursor:pointer;">model</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap" style="cursor:pointer;">year</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap" style="cursor:pointer;">price</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap" style="cursor:pointer;">mileage</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">listingId</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">make</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">model</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">year</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">price</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">mileage</th>
                                 <th scope="col" class="px-3 py-2 text-nowrap">title</th>
                                 <th scope="col" class="px-3 py-2 text-nowrap">bodyType</th>
                                 <th scope="col" class="px-3 py-2 text-nowrap">engineCapacity</th>
@@ -124,6 +124,10 @@
     </div>
 
     <script>
+        const jsonData = {"Car": [
+            // Your car data array here...
+        ]};
+
         document.addEventListener('DOMContentLoaded', () => {
             console.time("Dashboard Initialization");
             console.log("DOM content loaded. Initializing dashboard...");
@@ -134,7 +138,6 @@
                 year: null, price: { min: null, max: null }, mileage: { max: null }
             };
             let tableData = [];
-            let sortState = {};
 			let currentViewData = [];
 
             // --- DOM ELEMENTS ---
@@ -162,7 +165,7 @@
 				const filtersJSON = JSON.stringify(filters, (key, value) => (value instanceof Set) ? [...value] : value);
 				console.log("%cApplying Filters...", "color: blue; font-weight: bold;", JSON.parse(filtersJSON));
 
-				if (filters.makes.size === 0 && filters.models.size === 0 && filters.bodyTypes.size === 0) {
+                if (filters.makes.size === 0 && filters.models.size === 0 && filters.bodyTypes.size === 0) {
 					toggleVisuals(false);
 					updateBadges();
 					currentViewData = []; // Clear the view data
@@ -181,22 +184,7 @@
 				if (filters.price.min) filteredData = filteredData.filter(item => item.price >= filters.price.min);
 				if (filters.price.max) filteredData = filteredData.filter(item => item.price <= filters.price.max);
 
-				const sortKey = Object.keys(sortState)[0];
-				if (sortKey) {
-					const direction = sortState[sortKey];
-					console.log(`Applying sort on '${sortKey}' direction '${direction}'`);
-					filteredData.sort((a, b) => {
-						const valA = a[sortKey];
-						const valB = b[sortKey];
-						if (valA < valB) return direction === 'asc' ? -1 : 1;
-						if (valA > valB) return direction === 'asc' ? 1 : -1;
-						return 0;
-					});
-				}
-
-				currentViewData = filteredData;
-
-				renderTable(filteredData);
+				currentViewData = filteredData;				renderTable(filteredData);
 				renderPriceVsMileageChart(filteredData);
 				renderPriceVsYearChart(filteredData);
 				updateBadges();
@@ -440,30 +428,7 @@
 					el.addEventListener("mouseleave", () => dd.hide());
 				});
 
-				// Handle table sorting
-				document.querySelectorAll('#data-table thead th[style*="cursor: pointer"]').forEach(header => {
-					header.setAttribute("data-original-text", header.textContent);
-					header.addEventListener("click", () => {
-						const colKey = header.getAttribute("data-original-text");
-						const currentDir = sortState[colKey] || "desc";
-						const newDir = currentDir === "asc" ? "desc" : "asc";
-						
-						// Set the new sort state
-						sortState = { [colKey]: newDir };
-						console.log(`Sort state changed to: Column '${colKey}', Direction: '${newDir}'`);
-						
-						// Update header UI
-						document.querySelectorAll('#data-table thead th[data-original-text]').forEach(th => {
-							th.textContent = th.getAttribute("data-original-text");
-						});
-						header.textContent = `${colKey} ${newDir === "asc" ? "▲" : "▼"}`;
-						
-						// Trigger the main filter function to apply the new sort order
-						applyFilters();
-					});
-				});
-
-				// Setup logic for multi-select dropdowns (including search and "All" option)
+                // Table sorting removed				// Setup logic for multi-select dropdowns (including search and "All" option)
 				const setupMultiSelect = (ul, search, filterSet, hasAllOption = false) => {
 					ul.addEventListener("change", e => {
 						if (e.target.type !== "checkbox") return;
@@ -507,44 +472,9 @@
 				maxPriceDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.price.max = Number(e.target.getAttribute("data-value")); applyFilters(); } });
 			};
             // --- INITIAL PAGE LOAD ---
-            const jsonData = 
+						const jsonData = 
 			{
 "Car": [
-	{
-		"listingId" : "776530ad2d1b47dc99202d75e66ac0a3",
-		"make" : "Jetour",
-		"model" : "T2",
-		"year" : 2024,
-		"mileage" : 41463,
-		"price" : 119950,
-		"title" : "Jetour T2 Luxury",
-		"spec" : "GCC",
-		"isPremium" : 1,
-		"bodyType" : "SUV",
-		"engineCapacity" : "1500 - 1999 cc",
-		"horsepower" : "200 - 299 HP",
-		"transmissionType" : "Automatic Transmission",
-		"cylinders" : 4,
-		"interiorColor" : "Brown",
-		"exteriorColor" : "Grey",
-		"doors" : "5+ doors",
-		"seatingCapacity" : "5 Seater",
-		"trim" : "Luxury",
-		"warranty" : "Yes",
-		"fuelType" : "Petrol",
-		"motorsTrim" : "Luxury",
-		"sellerType" : "Dealer",
-		"location" : "Sheikh Zayed Road, Dubai",
-		"neighbourhood" : "Sheikh Zayed Road",
-		"detailPageUrl" : "https:\/\/dubai.dubizzle.com\/motors\/used-cars\/jetour\/t2\/2025\/9\/8\/aed-2223-pm-20-downpayment-jetour-t2-1-yea-2-775---776530ad2d1b47dc99202d75e66ac0a3\/",
-		"isNegotiable" : 0,
-		"thumbnailUrl" : "https:\/\/static.dubizzle.com\/frontend-web\/static-resources\/assets\/images\/share-white-border.svg",
-		"vehicleReference" : "3415\/16551449",
-		"isVerifiedUser" : null,
-		"createdAt" : 1757340911000,
-		"added" : 1758809542000,
-		"last_updated" : 1758882939101
-	},
 	{
 		"listingId" : "794bbff87eae472a9dc1ab3c4927c999",
 		"make" : "Mercedes-Benz",
@@ -2017,6 +1947,36 @@
 	}
 ]}
 
+            // Setup event handlers first since they don't depend on data
+            setupEventListeners();
+
+            // Initialize the tableData array with the embedded car data
+            tableData = jsonData.Car;
+            console.log("Loading car data...");
+            
+            // Initialize all filters with the data
+            populateYearFilter();
+            populatePriceFilters();
+            populateMaxMileageFilter();
+            
+            const makes = [...new Set(tableData.map(i => i.make))].sort();
+            const models = [...new Set(tableData.map(i => i.model))].sort();
+            const bodyTypes = [...new Set(tableData.map(i => i.bodyType).filter(Boolean))].sort();
+            const specs = [...new Set(tableData.map(i => i.spec).filter(Boolean))].sort();
+
+            populateMultiSelectFilter(makeDropdownList, makes);
+            populateMultiSelectFilter(modelDropdownList, models);
+            populateMultiSelectFilter(bodyTypeDropdownList, bodyTypes, true);
+            populateMultiSelectFilter(specDropdownList, specs, true);
+
+            // Set initial view data to full dataset
+            currentViewData = [...tableData];
+            
+            // Initial render of the table
+            applyFilters();
+            
+            console.log("Dashboard initialized with", tableData.length, "records");
+
             tableData = jsonData.Car || [];
             console.log(`%cLoaded ${tableData.length} car records.`, "color: green;");
 
@@ -2035,12 +1995,12 @@
             document.querySelectorAll('#bodyType-dropdown input:checked').forEach(cb => filters.bodyTypes.add(cb.value));
             document.querySelectorAll('#spec-dropdown input:checked').forEach(cb => filters.specs.add(cb.value));
 
-            // Set default filter to Model: Camry
-            filters.models.add('Camry');
-            const defaultModelCheckbox = modelDropdownList.querySelector('input[value="Camry"]');
-            if (defaultModelCheckbox) defaultModelCheckbox.checked = true;
-            console.log("Set default filter to Model: Camry.");
-            
+            // Set default filter to Make: Toyota
+            filters.makes.add('Toyota');
+            const defaultMakeCheckbox = makeDropdownList.querySelector('input[value="Toyota"]');
+            if (defaultMakeCheckbox) defaultMakeCheckbox.checked = true;
+            console.log("Set default filter to Make: Toyota.");
+
             applyFilters();
 
             console.log("%cDashboard initialization complete.", "color: green; font-weight: bold;");
