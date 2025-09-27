@@ -190,7 +190,7 @@
 				const filtersJSON = JSON.stringify(filters, (key, value) => (value instanceof Set) ? [...value] : value);
 				console.log("%cApplying Filters...", "color: blue; font-weight: bold;", JSON.parse(filtersJSON));
 
-				if (filters.makes.size === 0 && filters.models.size === 0 && filters.bodyTypes.size === 0) {
+				if (filters.makes.size === 0 && filters.models.size === 0 && (filters.bodyTypes.has("All") || filters.bodyTypes.size === 0)) {
 					toggleVisuals(false);
 					updateBadges();
 					currentViewData = []; // Clear the view data
