@@ -161,11 +161,36 @@
                 promptContainer.classList.toggle('d-none', show);
             };
 
+			// --- Sorting state & helpers (3-state: asc -> desc -> none) ---
+			let sortConfig = { key: null, dir: null };
+			let lastFilteredView = [];
+
+			const sortData = (arr, key, dir) => {
+				if (!key) return arr;
+				return [...arr].sort((a, b) => {
+					const aVal = a[key] === undefined || a[key] === null ? '' : a[key];
+					const bVal = b[key] === undefined || b[key] === null ? '' : b[key];
+
+					const aNum = typeof aVal === 'number' ? aVal : (isNaN(Number(aVal)) ? NaN : Number(aVal));
+					const bNum = typeof bVal === 'number' ? bVal : (isNaN(Number(bVal)) ? NaN : Number(bVal));
+
+					if (!isNaN(aNum) && !isNaN(bNum)) {
+						return dir === 'asc' ? aNum - bNum : bNum - aNum;
+					}
+
+					const aStr = String(aVal).toLowerCase();
+					const bStr = String(bVal).toLowerCase();
+					if (aStr < bStr) return dir === 'asc' ? -1 : 1;
+					if (aStr > bStr) return dir === 'asc' ? 1 : -1;
+					return 0;
+				});
+			};
+
 			const applyFilters = () => {
 				const filtersJSON = JSON.stringify(filters, (key, value) => (value instanceof Set) ? [...value] : value);
 				console.log("%cApplying Filters...", "color: blue; font-weight: bold;", JSON.parse(filtersJSON));
 
-                if (filters.makes.size === 0 && filters.models.size === 0 && filters.bodyTypes.size === 0) {
+				if (filters.makes.size === 0 && filters.models.size === 0 && filters.bodyTypes.size === 0) {
 					toggleVisuals(false);
 					updateBadges();
 					currentViewData = []; // Clear the view data
@@ -184,7 +209,18 @@
 				if (filters.price.min) filteredData = filteredData.filter(item => item.price >= filters.price.min);
 				if (filters.price.max) filteredData = filteredData.filter(item => item.price <= filters.price.max);
 
-				currentViewData = filteredData;				renderTable(filteredData);
+				// snapshot the natural filtered order so we can restore it when clearing sort
+				lastFilteredView = [...filteredData];
+
+				// if a sort is active, apply it; otherwise render the unsorted filtered view
+				if (sortConfig && sortConfig.key) {
+					const sorted = sortData(filteredData, sortConfig.key, sortConfig.dir);
+					currentViewData = sorted;
+					renderTable(sorted);
+				} else {
+					currentViewData = lastFilteredView;
+					renderTable(lastFilteredView);
+				}
 				renderPriceVsMileageChart(filteredData);
 				renderPriceVsYearChart(filteredData);
 				updateBadges();
@@ -428,7 +464,61 @@
 					el.addEventListener("mouseleave", () => dd.hide());
 				});
 
-                // Table sorting removed				// Setup logic for multi-select dropdowns (including search and "All" option)
+					// --- Table sorting: click headers to sort ASC / DESC ---
+
+					const initTableSorting = () => {
+						const headers = document.querySelectorAll('#data-table thead th');
+						headers.forEach(th => {
+							const originalKey = th.textContent.trim();
+							th.dataset.key = originalKey;
+							th.style.cursor = 'pointer';
+							th.title = `Sort by ${originalKey}`;
+							let ind = th.querySelector('.sort-indicator');
+							if (!ind) {
+								ind = document.createElement('span');
+								ind.className = 'sort-indicator';
+								ind.style.marginLeft = '6px';
+								th.appendChild(ind);
+							}
+
+							th.addEventListener('click', () => {
+								const key = th.dataset.key;
+
+								// Determine next state: null -> asc -> desc -> null
+								if (sortConfig.key !== key) {
+									sortConfig = { key, dir: 'asc' };
+								} else if (sortConfig.dir === 'asc') {
+									sortConfig.dir = 'desc';
+								} else {
+									// clear sort
+									sortConfig = { key: null, dir: null };
+								}
+
+								// Update indicators
+								document.querySelectorAll('#data-table thead th .sort-indicator').forEach(si => si.textContent = '');
+
+								if (sortConfig && sortConfig.key) {
+									const myInd = th.querySelector('.sort-indicator');
+									if (myInd) myInd.textContent = sortConfig.dir === 'asc' ? '▲' : '▼';
+
+									// apply sort to the currently visible dataset, or tableData if none
+									const source = (Array.isArray(currentViewData) && currentViewData.length >= 0) ? currentViewData : tableData;
+									const sorted = sortData(source, sortConfig.key, sortConfig.dir);
+									currentViewData = sorted;
+									renderTable(sorted);
+								} else {
+									// restore natural filtered order
+									currentViewData = lastFilteredView ? [...lastFilteredView] : (Array.isArray(tableData) ? [...tableData] : []);
+									renderTable(currentViewData);
+								}
+							});
+						});
+					};
+
+					// initialize sorting after table is available
+					initTableSorting();
+
+					// Setup logic for multi-select dropdowns (including search and "All" option)
 				const setupMultiSelect = (ul, search, filterSet, hasAllOption = false) => {
 					ul.addEventListener("change", e => {
 						if (e.target.type !== "checkbox") return;
