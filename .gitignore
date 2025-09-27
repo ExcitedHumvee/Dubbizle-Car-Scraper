@@ -12,6 +12,7 @@
 /backend/dist
 
 /backend/Scraper/errors
+/backend/Scraper/html_files
 
 
 *.png
