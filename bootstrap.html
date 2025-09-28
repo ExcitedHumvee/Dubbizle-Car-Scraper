@@ -394,6 +394,40 @@
 				const pC = polynomialRegression(xV,yV,2);
 				if(pC.length > 2) curves.push({ data: curvePoints.map(d=>[d,pC[0]+pC[1]*d+pC[2]*d*d]), color: "red", dash: "5,5", name: "Polynomial" });
 
+				// Power-law fit (y = a * x^b) using log-log linear regression
+				{
+					const powerFiltered = validData.filter(d => d.mileage > 0 && d.price > 0);
+					if (powerFiltered.length > 1) {
+						const xs = powerFiltered.map(d => Math.log(d.mileage));
+						const ys = powerFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.pow(px === 0 ? 1e-6 : px, b)]), color: "green", dash: "4,2", name: "Power" });
+						}
+					}
+				}
+
+				// Exponential fit (y = a * exp(b * x)) using linear regression on (x, log y)
+				{
+					const expFiltered = validData.filter(d => d.price > 0);
+					if (expFiltered.length > 1) {
+						const xs = expFiltered.map(d => d.mileage);
+						const ys = expFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.exp(b * px)]), color: "orange", dash: "2,6", name: "Exponential" });
+						}
+					}
+				}
+
 				curves.forEach(c => svg.append("path").datum(c.data).attr("fill", "none").attr("stroke", c.color).attr("stroke-width", 2.5).attr("stroke-dasharray", c.dash).attr("d", line));
 				
 				const legend = svg.append("g").attr("transform", `translate(${width - 150}, 0)`);
@@ -449,6 +483,40 @@
 				const xV = validData.map(d=>d.year), yV = validData.map(d=>d.price), xM = d3.mean(xV);
 				const pC = polynomialRegression(xV.map(d=>d-xM), yV, 2);
 				if (pC.length > 2) curves.push({ data: curvePoints.map(d=>[d,pC[0]+pC[1]*(d-xM)+pC[2]*Math.pow(d-xM,2)]), color: "red", dash: "5,5", name: "Polynomial" });
+
+				// Power-law fit on year vs price (only valid for positive years/prices)
+				{
+					const powerFiltered = validData.filter(d => d.year > 0 && d.price > 0);
+					if (powerFiltered.length > 1) {
+						const xs = powerFiltered.map(d => Math.log(d.year));
+						const ys = powerFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.pow(px === 0 ? 1e-6 : px, b)]), color: "green", dash: "4,2", name: "Power" });
+						}
+					}
+				}
+
+				// Exponential fit (y = a * exp(b * x)) for year vs price
+				{
+					const expFiltered = validData.filter(d => d.price > 0);
+					if (expFiltered.length > 1) {
+						const xs = expFiltered.map(d => d.year);
+						const ys = expFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.exp(b * px)]), color: "orange", dash: "2,6", name: "Exponential" });
+						}
+					}
+				}
 				
 				curves.forEach(c => svg.append("path").datum(c.data).attr("fill", "none").attr("stroke", c.color).attr("stroke-width", 2.5).attr("stroke-dasharray", c.dash).attr("d", line));
 				
