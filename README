@@ -9,5 +9,5 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    make bug fix bootstrap.html: im getting error Error: <path> attribute d: Expected number, "M775,NaNL773.708,NaNC…". d3@7:2
+    make bug fix bootstrap.html: the curve selection on the graphs doesnt persist when i toggle filters
     lil more beautification

@@ -202,6 +202,10 @@
 				'dark': '#212529'
 			};
 
+			// Persisted curve visibility map so legend toggles survive re-renders/filters
+			// Key format: `${chartId}::${curveName}` -> boolean
+			const CURVE_VISIBILITY = {};
+
 			// Apply per-dropdown Bootstrap color classes based on the adjacent menu id.
 			const applyFilterColorToUI = () => {
 				const filterCard = document.querySelector('.card.shadow-sm.mb-4');
@@ -511,8 +515,12 @@
 					}
 				}
 
-				// set default visibility: show Moving Avg and Power by default
-				curves.forEach(c => { c.visible = (c.name === 'Moving Avg' || c.name === 'Power'); });
+				// initialize visibility from CURVE_VISIBILITY if present; otherwise default to Moving Avg and Power
+				curves.forEach(c => {
+					const key = `chart1::${c.name}`;
+					if (key in CURVE_VISIBILITY) c.visible = CURVE_VISIBILITY[key];
+					else c.visible = (c.name === 'Moving Avg' || c.name === 'Power');
+				});
 
 				// sanitize curve data (ensure numeric and finite) and draw only valid curves
 				curves.forEach(c => { c.data = (c.data || []).map(p => [Number(p[0]), Number(p[1])]).filter(p => isFinite(p[0]) && isFinite(p[1])); });
@@ -541,9 +549,10 @@
 					// label
 					g.append('text').attr('x', 25).attr('y', 12).text(curve.name).style('font-size', '12px').style('fill', curve.visible ? '#000' : '#999');
 
-					// click handler toggles visibility
+					// click handler toggles visibility and persist it
 					g.on('click', () => {
 						curve.visible = !curve.visible;
+						CURVE_VISIBILITY[`chart1::${curve.name}`] = curve.visible;
 						// update path style
 						svg.selectAll(`path.curve-line[data-idx=\"${i}\"]`).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('opacity', curve.visible ? 1 : 0.18);
 						// update legend appearance
@@ -635,8 +644,12 @@
 					}
 				}
 				
-				// set default visibility: show Moving Avg and Power by default
-				curves.forEach(c => { c.visible = (c.name === 'Moving Avg' || c.name === 'Power'); });
+				// initialize visibility from CURVE_VISIBILITY if present; otherwise default to Moving Avg and Power
+				curves.forEach(c => {
+					const key = `chart2::${c.name}`;
+					if (key in CURVE_VISIBILITY) c.visible = CURVE_VISIBILITY[key];
+					else c.visible = (c.name === 'Moving Avg' || c.name === 'Power');
+				});
 
 				// sanitize curve data and only draw valid curves
 				curves.forEach(c => { c.data = (c.data || []).map(p => [Number(p[0]), Number(p[1])]).filter(p => isFinite(p[0]) && isFinite(p[1])); });
@@ -665,9 +678,10 @@
 					// label
 					g.append('text').attr('x', 25).attr('y', 12).text(curve.name).style('font-size', '12px').style('fill', curve.visible ? '#000' : '#999');
 
-					// click handler toggles visibility
+					// click handler toggles visibility and persist it
 					g.on('click', () => {
 						curve.visible = !curve.visible;
+						CURVE_VISIBILITY[`chart2::${curve.name}`] = curve.visible;
 						// update path style
 						svg.selectAll(`path.curve-line[data-idx=\"${i}\"]`).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('opacity', curve.visible ? 1 : 0.18);
 						// update legend appearance
