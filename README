@@ -9,5 +9,5 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    make change in bootstrap.html: in Car Price vs Mileage and Car Price vs Year graphs, i want to click on the line/text of a type of curve on legend to hide/show a particular car model. if it is turned off, it should be greyed out in the graph. by default i just want to show Moving Avg and power curve line
+    make bug fix bootstrap.html: im getting error Error: <path> attribute d: Expected number, "M775,NaNL773.708,NaNC…". d3@7:2
     lil more beautification

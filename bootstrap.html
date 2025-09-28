@@ -463,7 +463,8 @@
 					.on("mouseout", () => tooltip.transition().style("opacity", 0))
 					.on("click", (e, d) => window.open(d.detailPageUrl, "_blank"));
 
-				const line = d3.line().x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
+				// only build segments where both x and y are finite numbers
+				const line = d3.line().defined(d => isFinite(d[0]) && isFinite(d[1])).x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
 				const curves = [];
 				const [xMin, xMax] = x.domain();
 				const curvePoints = Array.from({ length: 101 }, (_, i) => xMin + (i / 100) * (xMax - xMin));
@@ -513,8 +514,11 @@
 				// set default visibility: show Moving Avg and Power by default
 				curves.forEach(c => { c.visible = (c.name === 'Moving Avg' || c.name === 'Power'); });
 
+				// sanitize curve data (ensure numeric and finite) and draw only valid curves
+				curves.forEach(c => { c.data = (c.data || []).map(p => [Number(p[0]), Number(p[1])]).filter(p => isFinite(p[0]) && isFinite(p[1])); });
 				// Render curve paths and give each a data-idx for toggling
 				curves.forEach((c, i) => {
+					if (!c.data || c.data.length < 2) return; // need at least two points to draw a path
 					svg.append("path")
 						.datum(c.data)
 						.attr("class", "curve-line")
@@ -583,7 +587,8 @@
 					.on("mouseout", () => tooltip.transition().style("opacity", 0))
 					.on("click", (e, d) => window.open(d.detailPageUrl, "_blank"));
 
-				const line = d3.line().x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
+				// avoid NaN in path 'd' by defining only finite points
+				const line = d3.line().defined(d => isFinite(d[0]) && isFinite(d[1])).x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
 				const curves = [];
 				const [xMin, xMax] = d3.extent(validData, d => d.year);
 				const curvePoints = Array.from({ length: 101 }, (_, i) => xMin + (i / 100) * (xMax - xMin));
@@ -633,8 +638,11 @@
 				// set default visibility: show Moving Avg and Power by default
 				curves.forEach(c => { c.visible = (c.name === 'Moving Avg' || c.name === 'Power'); });
 
+				// sanitize curve data and only draw valid curves
+				curves.forEach(c => { c.data = (c.data || []).map(p => [Number(p[0]), Number(p[1])]).filter(p => isFinite(p[0]) && isFinite(p[1])); });
 				// Render curve paths with data-idx for toggling
 				curves.forEach((c, i) => {
+					if (!c.data || c.data.length < 2) return;
 					svg.append("path")
 						.datum(c.data)
 						.attr("class", "curve-line")
