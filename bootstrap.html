@@ -399,7 +399,27 @@
 				// choose close icon contrast: white for dark backgrounds, default for light
 				const closeClass = (color === 'light' || color === 'warning' || color === 'info' || color === 'secondary') ? 'btn-close' : 'btn-close btn-close-white';
 				badge.innerHTML = `${text} <button type="button" class="${closeClass} ms-2" aria-label="Close"></button>`;
-				badge.querySelector("button").onclick = removeCallback;
+
+				// Make the whole badge act as a clickable control to remove the filter
+				badge.style.cursor = 'pointer';
+				badge.setAttribute('role', 'button');
+				badge.tabIndex = 0;
+
+				// Clicking the close button should remove the filter, but stop propagation
+				// so the badge-level handler doesn't call the callback twice.
+				const btn = badge.querySelector("button");
+				if (btn) {
+					btn.addEventListener('click', (e) => { e.stopPropagation(); removeCallback(); });
+				}
+
+				// Badge-level click removes the filter
+				badge.addEventListener('click', () => removeCallback());
+
+				// Keyboard accessibility: Enter or Space activates the badge
+				badge.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); removeCallback(); }
+				});
+
 				return badge;
 			};
             
