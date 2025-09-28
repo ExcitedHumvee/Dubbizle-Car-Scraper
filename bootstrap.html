@@ -510,12 +510,42 @@
 					}
 				}
 
-				curves.forEach(c => svg.append("path").datum(c.data).attr("fill", "none").attr("stroke", c.color).attr("stroke-width", 2.5).attr("stroke-dasharray", c.dash).attr("d", line));
-				
-				const legend = svg.append("g").attr("transform", `translate(${width - 150}, 0)`);
+				// set default visibility: show Moving Avg and Power by default
+				curves.forEach(c => { c.visible = (c.name === 'Moving Avg' || c.name === 'Power'); });
+
+				// Render curve paths and give each a data-idx for toggling
+				curves.forEach((c, i) => {
+					svg.append("path")
+						.datum(c.data)
+						.attr("class", "curve-line")
+						.attr("data-idx", i)
+						.attr("fill", "none")
+						.attr("stroke", c.visible ? c.color : '#cfcfcf')
+						.attr("stroke-width", 2.5)
+						.attr("stroke-dasharray", c.dash)
+						.attr("opacity", c.visible ? 1 : 0.18)
+						.attr("d", line);
+				});
+
+				// Build interactive legend: clicking an item toggles its visibility
+				const legend = svg.append("g").attr("transform", `translate(${width - 160}, 0)`);
+				const legendItemHeight = 20;
 				curves.forEach((curve, i) => {
-					legend.append("line").attr("x1", 0).attr("x2", 20).attr("y1", i * 20).attr("y2", i * 20).attr("stroke", curve.color).attr("stroke-width", 2.5).attr("stroke-dasharray", curve.dash);
-					legend.append("text").attr("x", 25).attr("y", i * 20 + 4).text(curve.name).style("font-size", "12px");
+					const g = legend.append('g').attr('transform', `translate(0, ${i * legendItemHeight})`).style('cursor', 'pointer');
+					// color swatch/line
+					g.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('stroke-width', 2.5).attr('stroke-dasharray', curve.dash);
+					// label
+					g.append('text').attr('x', 25).attr('y', 12).text(curve.name).style('font-size', '12px').style('fill', curve.visible ? '#000' : '#999');
+
+					// click handler toggles visibility
+					g.on('click', () => {
+						curve.visible = !curve.visible;
+						// update path style
+						svg.selectAll(`path.curve-line[data-idx=\"${i}\"]`).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('opacity', curve.visible ? 1 : 0.18);
+						// update legend appearance
+						g.select('line').attr('stroke', curve.visible ? curve.color : '#cfcfcf');
+						g.select('text').style('fill', curve.visible ? '#000' : '#999');
+					});
 				});
 
 				svg.append("text").attr("x", width / 2).attr("y", -margin.top / 2).attr("text-anchor", "middle").style("font-size", "16px").style("font-weight", "bold").text("Car Price vs Mileage");
@@ -600,12 +630,42 @@
 					}
 				}
 				
-				curves.forEach(c => svg.append("path").datum(c.data).attr("fill", "none").attr("stroke", c.color).attr("stroke-width", 2.5).attr("stroke-dasharray", c.dash).attr("d", line));
-				
-				const legend = svg.append("g").attr("transform", `translate(${width - 150}, 0)`);
+				// set default visibility: show Moving Avg and Power by default
+				curves.forEach(c => { c.visible = (c.name === 'Moving Avg' || c.name === 'Power'); });
+
+				// Render curve paths with data-idx for toggling
+				curves.forEach((c, i) => {
+					svg.append("path")
+						.datum(c.data)
+						.attr("class", "curve-line")
+						.attr("data-idx", i)
+						.attr("fill", "none")
+						.attr("stroke", c.visible ? c.color : '#cfcfcf')
+						.attr("stroke-width", 2.5)
+						.attr("stroke-dasharray", c.dash)
+						.attr("opacity", c.visible ? 1 : 0.18)
+						.attr("d", line);
+				});
+
+				// Build interactive legend: clicking an item toggles its visibility
+				const legend = svg.append("g").attr("transform", `translate(${width - 160}, 0)`);
+				const legendItemHeight = 20;
 				curves.forEach((curve, i) => {
-					legend.append("line").attr("x1", 0).attr("x2", 20).attr("y1", i * 20).attr("y2", i * 20).attr("stroke", curve.color).attr("stroke-width", 2.5).attr("stroke-dasharray", curve.dash);
-					legend.append("text").attr("x", 25).attr("y", i * 20 + 4).text(curve.name).style("font-size", "12px");
+					const g = legend.append('g').attr('transform', `translate(0, ${i * legendItemHeight})`).style('cursor', 'pointer');
+					// color swatch/line
+					g.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('stroke-width', 2.5).attr('stroke-dasharray', curve.dash);
+					// label
+					g.append('text').attr('x', 25).attr('y', 12).text(curve.name).style('font-size', '12px').style('fill', curve.visible ? '#000' : '#999');
+
+					// click handler toggles visibility
+					g.on('click', () => {
+						curve.visible = !curve.visible;
+						// update path style
+						svg.selectAll(`path.curve-line[data-idx=\"${i}\"]`).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('opacity', curve.visible ? 1 : 0.18);
+						// update legend appearance
+						g.select('line').attr('stroke', curve.visible ? curve.color : '#cfcfcf');
+						g.select('text').style('fill', curve.visible ? '#000' : '#999');
+					});
 				});
 
 				svg.append("text").attr("x", width / 2).attr("y", -margin.top / 2).attr("text-anchor", "middle").style("font-size", "16px").style("font-weight", "bold").text("Car Price vs Year");

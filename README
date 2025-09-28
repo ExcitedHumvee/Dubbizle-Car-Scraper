@@ -9,6 +9,5 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    make change in bootstrap.html: if i have to cancel a filter, i hqave to click on the x in the badge (btn-close btn-close-white ms-2 class i believe), i should be able to click anywhere on the badge to cancel the filter
-    make change in bootstrap.html: in Car Price vs Mileage and Car Price vs Year graphs, i want to click on the line/text of a type of curve on legend to hide/show a particular car model. if it is turned off, it should be greyed out in the graph
+    make change in bootstrap.html: in Car Price vs Mileage and Car Price vs Year graphs, i want to click on the line/text of a type of curve on legend to hide/show a particular car model. if it is turned off, it should be greyed out in the graph. by default i just want to show Moving Avg and power curve line
     lil more beautification
