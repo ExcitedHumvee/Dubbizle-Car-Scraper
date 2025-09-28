@@ -9,6 +9,7 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    in bootstrap.html structure it better add more comments
+    in bootstrap.html change the color of Filter buttons and badges. make sure the filter buttons and badges are the same color
+    in bootstrap.html, in the Price vs Mileage graph, i dont see power curve and exponential curve' also in price vs year graph, i dont see power curve and exponential curve
     lil more beautification
     too many filter badges, make aure its grouped
