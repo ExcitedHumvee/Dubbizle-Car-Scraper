@@ -13,6 +13,8 @@
     "test:api": "node test_api.js",
     "studio": "npx prisma studio",
     "export:all": "node export-all-cars.js"
+    ,
+    "sync:index": "node update-index-with-allcars.js"
   },
   "keywords": [],
   "author": "",
