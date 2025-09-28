@@ -9,6 +9,5 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    in bootstrap.html change the color of Filter buttons and badges. make sure the filter buttons and badges have matching color. use bootstraps built in colors
+    
     lil more beautification
-    too many filter badges, make aure its grouped
