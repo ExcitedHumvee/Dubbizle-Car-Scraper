@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            pointer-events: none;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .point {
+            cursor: pointer;
+        }
+
+        .chart-container svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+    <div class="container-fluid p-4">
+
+        <!-- Filter Section -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between">
+                <div class="d-flex align-items-center w-100 mb-3">
+                    <h2 class="h5 mb-0">Filters</h2>
+                    <div class="vr mx-4"></div>
+                    <div id="selected-filters-container" class="flex-grow-1 overflow-auto text-nowrap py-1 pe-4">
+                        <span class="text-muted small">No filters applied</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <!-- Dropdowns -->
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Make</button><div id="make-dropdown" class="dropdown-menu p-3" style="width:280px;z-index:1030;"><input type="text" id="make-search" class="form-control mb-2" placeholder="Search make"><ul class="list-unstyled overflow-auto" style="max-height:500px;"></ul></div></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Model</button><div id="model-dropdown" class="dropdown-menu p-3" style="width:280px;z-index:1030;"><input type="text" id="model-search" class="form-control mb-2" placeholder="Search model"><ul class="list-unstyled overflow-auto" style="max-height:500px;"></ul></div></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Body Type</button><div id="bodyType-dropdown" class="dropdown-menu p-3" style="width:280px;z-index:1030;"><input type="text" id="bodyType-search" class="form-control mb-2" placeholder="Search Body Type"><ul class="list-unstyled overflow-auto" style="max-height:500px;"></ul></div></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Spec</button><div id="spec-dropdown" class="dropdown-menu p-3" style="width:280px;z-index:1030;"><input type="text" id="spec-search" class="form-control mb-2" placeholder="Search Spec"><ul class="list-unstyled overflow-auto" style="max-height:500px;"></ul></div></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Min Year</button><ul id="year-dropdown" class="dropdown-menu" style="z-index:1030;max-height:500px;overflow-y:auto;"></ul></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Max Mileage</button><ul id="max-mileage-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Min Price</button><ul id="min-price-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
+                    <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Max Price</button><ul id="max-price-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart & Table Container -->
+        <div id="visuals-container">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div id="chart1" class="chart-container" style="min-height:450px;"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div id="chart2" class="chart-container" style="min-height:450px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow-sm" style="flex-grow:3;overflow:hidden;position:relative;">
+                <div class="overflow-auto h-100 table-responsive">
+                    <table id="data-table" class="table table-striped table-hover table-sm">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 text-nowrap">listingId</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">make</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">model</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">year</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">price</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">mileage</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">title</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">bodyType</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">engineCapacity</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">horsepower</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">transmissionType</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">cylinders</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">interiorColor</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">exteriorColor</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">doors</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">seatingCapacity</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">trim</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">warranty</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">fuelType</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">spec</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">sellerType</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">location</th>
+                                <th scope="col" class="px-3 py-2 text-nowrap">detailPageUrl</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt Container -->
+        <div id="prompt-container" class="text-center p-5 d-none">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Select Filters to Begin</h5>
+                    <p class="card-text text-muted">Please select a Make, a Model, or a Body Type to view the dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+	<script>
+		/*
+		 Dashboard script (bootstrap.html)
+
+		 Structure & conventions:
+		 - jsonData.Car: raw data array embedded below (or replaced at runtime).
+		 - State variables live in the top-level of the DOMContentLoaded handler:
+			 - filters: Set-based filter selections and numeric bounds
+			 - tableData: full dataset
+			 - currentViewData: currently visible rows (after filtering/sorting)
+		 - Key functions:
+			 - applyFilters(): build filteredData from tableData and current filters
+			 - sortData(): helper for sorting arrays by a key and direction
+			 - renderTable(): render rows into the table body
+			 - initTableSorting()/setupEventListeners(): wire up UI interactions
+
+		 Sorting behaviour:
+		 - Headers support a 3-state cycle: ASC -> DESC -> NONE (restore natural filtered order)
+		 - The unsorted filtered snapshot is kept in `lastFilteredView` so 'NONE' restores the expected order.
+		*/
+
+		const jsonData = {"Car": [
+			// Your car data array here...
+		]};
+
+		document.addEventListener('DOMContentLoaded', () => {
+			console.time("Dashboard Initialization");
+			console.log("DOM content loaded. Initializing dashboard...");
+
+            // --- STATE MANAGEMENT ---
+            const filters = {
+                makes: new Set(), models: new Set(), bodyTypes: new Set(), specs: new Set(),
+                year: null, price: { min: null, max: null }, mileage: { max: null }
+            };
+            let tableData = [];
+			let currentViewData = [];
+
+            // --- DOM ELEMENTS ---
+            const tableBody = document.querySelector('#data-table tbody');
+            const badgesContainer = document.getElementById('selected-filters-container');
+            const makeDropdownList = document.querySelector('#make-dropdown ul');
+            const modelDropdownList = document.querySelector('#model-dropdown ul');
+            const bodyTypeDropdownList = document.querySelector('#bodyType-dropdown ul');
+            const specDropdownList = document.querySelector('#spec-dropdown ul');
+            const yearDropdown = document.getElementById('year-dropdown');
+            const maxMileageDropdown = document.getElementById('max-mileage-dropdown');
+            const minPriceDropdown = document.getElementById('min-price-dropdown');
+            const maxPriceDropdown = document.getElementById('max-price-dropdown');
+            const visualsContainer = document.getElementById('visuals-container');
+            const promptContainer = document.getElementById('prompt-container');
+
+			// --- UI theme config ---
+			// Default color used when a mapping isn't provided
+			const FILTER_BOOTSTRAP_COLOR = 'info';
+
+			// Per-dropdown color map (use Bootstrap built-in color keywords)
+			const FILTER_COLOR_MAP = {
+				'make-dropdown': 'primary',
+				'model-dropdown': 'success',
+				'bodyType-dropdown': 'warning',
+				'spec-dropdown': 'danger',
+				'year-dropdown': 'info',
+				'max-mileage-dropdown': 'secondary',
+				'min-price-dropdown': 'dark',
+				'max-price-dropdown': 'dark'
+			};
+
+			// Simple hex swatch map to make the colors obvious on the buttons.
+			const SWATCH_COLOR_MAP = {
+				'primary': '#0d6efd',
+				'secondary': '#6c757d',
+				'success': '#198754',
+				'danger': '#dc3545',
+				'warning': '#ffc107',
+				'info': '#0dcaf0',
+				'light': '#f8f9fa',
+				'dark': '#212529'
+			};
+
+			// Persisted curve visibility map so legend toggles survive re-renders/filters
+			// Key format: `${chartId}::${curveName}` -> boolean
+			const CURVE_VISIBILITY = {};
+
+			// Apply per-dropdown Bootstrap color classes based on the adjacent menu id.
+			const applyFilterColorToUI = () => {
+				const filterCard = document.querySelector('.card.shadow-sm.mb-4');
+				if (!filterCard) return;
+				filterCard.querySelectorAll('.dropdown-toggle').forEach(btn => {
+					// determine the id of the related menu (button.nextElementSibling)
+					const menu = btn.nextElementSibling;
+					const menuId = menu && menu.id ? menu.id : null;
+					const color = (menuId && FILTER_COLOR_MAP[menuId]) ? FILTER_COLOR_MAP[menuId] : FILTER_BOOTSTRAP_COLOR;
+
+					// remove any existing btn-<color> classes while preserving other classes
+					const classes = Array.from(btn.classList);
+					classes.forEach(c => { if (/^btn-/.test(c)) btn.classList.remove(c); });
+					if (!btn.classList.contains('btn')) btn.classList.add('btn');
+					btn.classList.add(`btn-${color}`);
+
+					// add/update a small swatch so different colors are obvious even if badges were similar
+					let sw = btn.querySelector('.filter-swatch');
+					if (!sw) {
+						sw = document.createElement('span');
+						// sw.className = 'filter-swatch me-2';
+						sw.style.display = 'inline-block';
+						sw.style.width = '0px'; // removed the swatch
+						sw.style.height = '0px'; // removed the swatch
+						sw.style.borderRadius = '2px';
+						btn.prepend(sw);
+					}
+					sw.style.background = SWATCH_COLOR_MAP[color] || SWATCH_COLOR_MAP[FILTER_BOOTSTRAP_COLOR];
+				});
+			};
+
+            // --- CORE LOGIC ---
+
+            const toggleVisuals = (show) => {
+                visualsContainer.classList.toggle('d-none', !show);
+                promptContainer.classList.toggle('d-none', show);
+            };
+
+			// --- Sorting state & helpers (3-state: asc -> desc -> none) ---
+			let sortConfig = { key: null, dir: null };
+			let lastFilteredView = [];
+
+			// sortData: stable-ish comparator that handles numeric and string values.
+			// Inputs:
+			//  - arr: array of objects
+			//  - key: object property to compare (string)
+			//  - dir: 'asc' or 'desc'
+			const sortData = (arr, key, dir) => {
+				if (!key) return arr;
+				return [...arr].sort((a, b) => {
+					const aVal = a[key] === undefined || a[key] === null ? '' : a[key];
+					const bVal = b[key] === undefined || b[key] === null ? '' : b[key];
+
+					const aNum = typeof aVal === 'number' ? aVal : (isNaN(Number(aVal)) ? NaN : Number(aVal));
+					const bNum = typeof bVal === 'number' ? bVal : (isNaN(Number(bVal)) ? NaN : Number(bVal));
+
+					if (!isNaN(aNum) && !isNaN(bNum)) {
+						return dir === 'asc' ? aNum - bNum : bNum - aNum;
+					}
+
+					const aStr = String(aVal).toLowerCase();
+					const bStr = String(bVal).toLowerCase();
+					if (aStr < bStr) return dir === 'asc' ? -1 : 1;
+					if (aStr > bStr) return dir === 'asc' ? 1 : -1;
+					return 0;
+				});
+			};
+
+			// applyFilters: produce a filtered dataset from `tableData` according to `filters`.
+			// Side-effects:
+			//  - updates currentViewData
+			//  - updates charts via renderPriceVsMileageChart & renderPriceVsYearChart
+			//  - updates the UI badges
+			const applyFilters = () => {
+				const filtersJSON = JSON.stringify(filters, (key, value) => (value instanceof Set) ? [...value] : value);
+				console.log("%cApplying Filters...", "color: blue; font-weight: bold;", JSON.parse(filtersJSON));
+
+				if (filters.makes.size === 0 && filters.models.size === 0 && (filters.bodyTypes.has("All") || filters.bodyTypes.size === 0)) {
+					toggleVisuals(false);
+					updateBadges();
+					currentViewData = []; // Clear the view data
+					renderTable([]); // Render an empty table
+					return;
+				}
+				toggleVisuals(true);
+
+				let filteredData = [...tableData];
+				if (filters.makes.size > 0 && !filters.makes.has('All')) filteredData = filteredData.filter(item => filters.makes.has(item.make));
+				if (filters.models.size > 0 && !filters.models.has('All')) filteredData = filteredData.filter(item => filters.models.has(item.model));
+				if (filters.bodyTypes.size > 0 && !filters.bodyTypes.has('All')) filteredData = filteredData.filter(item => filters.bodyTypes.has(item.bodyType));
+				if (filters.specs.size > 0 && !filters.specs.has('All')) filteredData = filteredData.filter(item => filters.specs.has(item.spec));
+				if (filters.year) filteredData = filteredData.filter(item => item.year >= filters.year);
+				if (filters.mileage.max) filteredData = filteredData.filter(item => (item.mileage || 0) <= filters.mileage.max);
+				if (filters.price.min) filteredData = filteredData.filter(item => item.price >= filters.price.min);
+				if (filters.price.max) filteredData = filteredData.filter(item => item.price <= filters.price.max);
+
+				// snapshot the natural filtered order so we can restore it when clearing sort
+				lastFilteredView = [...filteredData];
+
+				// if a sort is active, apply it; otherwise render the unsorted filtered view
+				if (sortConfig && sortConfig.key) {
+					const sorted = sortData(filteredData, sortConfig.key, sortConfig.dir);
+					currentViewData = sorted;
+					renderTable(sorted);
+				} else {
+					currentViewData = lastFilteredView;
+					renderTable(lastFilteredView);
+				}
+				renderPriceVsMileageChart(filteredData);
+				renderPriceVsYearChart(filteredData);
+				updateBadges();
+			};
+
+            // --- RENDERING & HELPER FUNCTIONS ---
+
+			// renderTable: purely presentational — converts `data` into tbody rows.
+			// Expects an array of objects with the same keys present in the table header.
+			const renderTable = (data) => {
+				console.log(`Rendering table with ${data.length} records.`);
+				tableBody.innerHTML = '';
+				if (data.length === 0) {
+					tableBody.innerHTML = `<tr><td colspan="23" class="text-center p-5 text-muted">No data found for the selected filters.</td></tr>`;
+					return;
+				}
+				const rowsHtml = data.map(row => `
+                    <tr>
+                        <td class="px-3 py-2 text-nowrap">${row.listingId||''}</td><td class="px-3 py-2 text-nowrap">${row.make||''}</td><td class="px-3 py-2 text-nowrap">${row.model||''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.year||''}</td><td class="px-3 py-2 text-nowrap">$${row.price?row.price.toLocaleString():''}</td><td class="px-3 py-2 text-nowrap">${row.mileage?row.mileage.toLocaleString():''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.title||''}</td><td class="px-3 py-2 text-nowrap">${row.bodyType||''}</td><td class="px-3 py-2 text-nowrap">${row.engineCapacity||''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.horsepower||''}</td><td class="px-3 py-2 text-nowrap">${row.transmissionType||''}</td><td class="px-3 py-2 text-nowrap">${row.cylinders||''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.interiorColor||''}</td><td class="px-3 py-2 text-nowrap">${row.exteriorColor||''}</td><td class="px-3 py-2 text-nowrap">${row.doors||''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.seatingCapacity||''}</td><td class="px-3 py-2 text-nowrap">${row.trim||''}</td><td class="px-3 py-2 text-nowrap">${row.warranty||''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.fuelType||''}</td><td class="px-3 py-2 text-nowrap">${row.spec||''}</td><td class="px-3 py-2 text-nowrap">${row.sellerType||''}</td>
+                        <td class="px-3 py-2 text-nowrap">${row.location||''}</td><td class="px-3 py-2 text-nowrap"><a href="${row.detailPageUrl}" target="_blank">View</a></td>
+                    </tr>`).join('');
+                tableBody.innerHTML = rowsHtml;
+            };
+
+			const updateBadges = () => {
+                badgesContainer.innerHTML = "";
+                let hasFilters = false;
+
+				const addBadge = (text, removeCallback, color = FILTER_BOOTSTRAP_COLOR) => {
+                    hasFilters = true;
+					const badge = createBadge(text, removeCallback, color);
+                    badgesContainer.appendChild(badge);
+                };
+
+                // Handle Make and Model (no 'All' option)
+				filters.makes.forEach(m => addBadge(`Make: ${m}`, () => {
+                    filters.makes.delete(m);
+                    document.querySelector(`#make-dropdown input[value="${m}"]`).checked = false;
+                    applyFilters();
+				}, FILTER_COLOR_MAP['make-dropdown']));
+                filters.models.forEach(m => addBadge(`Model: ${m}`, () => {
+                    filters.models.delete(m);
+                    document.querySelector(`#model-dropdown input[value="${m}"]`).checked = false;
+                    applyFilters();
+				}, FILTER_COLOR_MAP['model-dropdown']));
+
+                // Handle Body Types: Only show badges if 'All' is NOT selected
+                if (!filters.bodyTypes.has('All')) {
+					filters.bodyTypes.forEach(b => addBadge(`Body: ${b}`, () => {
+                        filters.bodyTypes.delete(b);
+                        document.querySelector(`#bodyType-dropdown input[value="${b}"]`).checked = false;
+                        applyFilters(); // This will also handle unchecking the 'All' box via the event listener
+					}, FILTER_COLOR_MAP['bodyType-dropdown']));
+                }
+
+                // Handle Specs: Only show badges if 'All' is NOT selected
+                if (!filters.specs.has('All')) {
+					filters.specs.forEach(s => addBadge(`Spec: ${s}`, () => {
+                        filters.specs.delete(s);
+                        document.querySelector(`#spec-dropdown input[value="${s}"]`).checked = false;
+                        applyFilters(); // This will also handle unchecking the 'All' box via the event listener
+					}, FILTER_COLOR_MAP['spec-dropdown']));
+                }
+
+                // Handle other filters
+				if (filters.year) addBadge(`Min Year: ${filters.year}`, () => { filters.year = null; applyFilters(); }, FILTER_COLOR_MAP['year-dropdown']);
+				if (filters.mileage.max) addBadge(`Max Mileage: ${filters.mileage.max.toLocaleString()}`, () => { filters.mileage.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-mileage-dropdown']);
+				if (filters.price.min) addBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }, FILTER_COLOR_MAP['min-price-dropdown']);
+				if (filters.price.max) addBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-price-dropdown']);
+                
+                // If, after all checks, no specific filters are applied, show the placeholder text.
+                if (!hasFilters) {
+                    badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>';
+                }
+            };
+            
+			const createBadge = (text, removeCallback, color = FILTER_BOOTSTRAP_COLOR) => {
+				const badge = document.createElement("span");
+				// use the provided bootstrap bg color so badges match their filter buttons
+				badge.className = `badge bg-${color} me-2`;
+				// choose close icon contrast: white for dark backgrounds, default for light
+				const closeClass = (color === 'light' || color === 'warning' || color === 'info' || color === 'secondary') ? 'btn-close' : 'btn-close btn-close-white';
+				badge.innerHTML = `${text} <button type="button" class="${closeClass} ms-2" aria-label="Close"></button>`;
+
+				// Make the whole badge act as a clickable control to remove the filter
+				badge.style.cursor = 'pointer';
+				badge.setAttribute('role', 'button');
+				badge.tabIndex = 0;
+
+				// Clicking the close button should remove the filter, but stop propagation
+				// so the badge-level handler doesn't call the callback twice.
+				const btn = badge.querySelector("button");
+				if (btn) {
+					btn.addEventListener('click', (e) => { e.stopPropagation(); removeCallback(); });
+				}
+
+				// Badge-level click removes the filter
+				badge.addEventListener('click', () => removeCallback());
+
+				// Keyboard accessibility: Enter or Space activates the badge
+				badge.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); removeCallback(); }
+				});
+
+				return badge;
+			};
+            
+
+			// polynomialRegression
+			// Lightweight polynomial regression solver used to fit a curve through (x,y) points.
+			// Inputs: x (array), y (array), d (degree). Returns coefficients [c0, c1, ...].
+			// Note: implemented inline for simplicity; returns [] if singular.
+			function polynomialRegression(x,y,d){const n=x.length;if(n<d+1)return[];let X=[],Y=y.map(v=>[v]);for(let i=0;i<n;i++){let r=[];for(let j=0;j<=d;j++)r.push(Math.pow(x[i],j));X.push(r)}const M=(a,b)=>a.map(r=>b[0].map((_,i)=>r.reduce((s,e,j)=>s+e*b[j][i],0))),T=m=>m[0].map((_,i)=>m.map(r=>r[i]));function I(m){const n=m.length,r=Array(n).fill(0).map(()=>Array(n).fill(0)),t=m.map((r,i)=>[...r,...Array(n).fill(0).map((_,j)=>i===j?1:0)]);for(let i=0;i<n;i++){let p=t[i][i];if(p===0)return null;for(let j=0;j<2*n;j++)t[i][j]/=p;for(let k=0;k<n;k++)if(k!==i){let f=t[k][i];for(let j=0;j<2*n;j++)t[k][j]-=f*t[i][j]}}for(let i=0;i<n;i++)for(let j=0;j<n;j++)r[i][j]=t[i][j+n];return r}const xT=T(X),xTx=M(xT,X),xTxI=I(xTx);if(!xTxI)return[];return M(M(xTxI,xT),Y).map(r=>r[0])}
+
+			// renderPriceVsMileageChart
+			// Renders a D3 scatterplot of Price vs Mileage with moving average and polynomial fit overlays.
+			// Expects an array of objects with numeric `price` and `mileage` fields.
+			function renderPriceVsMileageChart(data) {
+				const container = document.getElementById("chart1");
+				container.innerHTML = "";
+				const validData = data.filter(d => d.price != null).map(d => ({...d, mileage: d.mileage == null ? 0 : d.mileage }));
+				console.log(`Rendering Price vs Mileage chart with ${validData.length} records.`);
+
+				if (validData.length < 2) {
+					container.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100 p-3"><p class="text-muted">Not enough data to display chart.</p></div>';
+					return;
+				}
+
+				const bounds = container.getBoundingClientRect();
+				const margin = { top: 40, right: 40, bottom: 60, left: 70 };
+				const width = bounds.width - margin.left - margin.right;
+				const height = 450 - margin.top - margin.bottom;
+
+				const svg = d3.select("#chart1").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${bounds.width} 450`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+				const x = d3.scaleLinear().domain([0, d3.max(validData, d => d.mileage)]).range([0, width]);
+				const y = d3.scaleLinear().domain([0, d3.max(validData, d => d.price)]).range([height, 0]);
+
+				svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x)).append("text").attr("x", width / 2).attr("y", 40).attr("fill", "black").text("Mileage (km)");
+				svg.append("g").call(d3.axisLeft(y)).append("text").attr("transform", "rotate(-90)").attr("y", -50).attr("x", -(height / 2)).attr("fill", "black").text("Price (AED)");
+				
+				const tooltip = d3.select("body").selectAll(".tooltip").data([0]).join("div").attr("class", "tooltip").style("opacity", 0);
+				
+				svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.mileage)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", "#69b3a2")
+					.on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED`).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 28) + "px"); })
+					.on("mouseout", () => tooltip.transition().style("opacity", 0))
+					.on("click", (e, d) => window.open(d.detailPageUrl, "_blank"));
+
+				// only build segments where both x and y are finite numbers
+				const line = d3.line().defined(d => isFinite(d[0]) && isFinite(d[1])).x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
+				const curves = [];
+				const [xMin, xMax] = x.domain();
+				const curvePoints = Array.from({ length: 101 }, (_, i) => xMin + (i / 100) * (xMax - xMin));
+				
+				const sortedForMA = [...validData].sort((a,b) => a.mileage - b.mileage);
+				const movingAverageData = sortedForMA.map((_, i) => { const start = Math.max(0, i - 5), end = Math.min(sortedForMA.length, i + 6); const window = sortedForMA.slice(start, end); return [d3.mean(window, d => d.mileage), d3.mean(window, d => d.price)]; });
+				curves.push({ data: movingAverageData, color: "blue", dash: null, name: "Moving Avg" });
+
+				const xV = validData.map(d=>d.mileage), yV = validData.map(d=>d.price);
+				const pC = polynomialRegression(xV,yV,2);
+				if(pC.length > 2) curves.push({ data: curvePoints.map(d=>[d,pC[0]+pC[1]*d+pC[2]*d*d]), color: "red", dash: "5,5", name: "Polynomial" });
+
+				// Power-law fit (y = a * x^b) using log-log linear regression
+				{
+					const powerFiltered = validData.filter(d => d.mileage > 0 && d.price > 0);
+					if (powerFiltered.length > 1) {
+						const xs = powerFiltered.map(d => Math.log(d.mileage));
+						const ys = powerFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.pow(px === 0 ? 1e-6 : px, b)]), color: "green", dash: "4,2", name: "Power" });
+						}
+					}
+				}
+
+				// Exponential fit (y = a * exp(b * x)) using linear regression on (x, log y)
+				{
+					const expFiltered = validData.filter(d => d.price > 0);
+					if (expFiltered.length > 1) {
+						const xs = expFiltered.map(d => d.mileage);
+						const ys = expFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.exp(b * px)]), color: "orange", dash: "2,6", name: "Exponential" });
+						}
+					}
+				}
+
+				// initialize visibility from CURVE_VISIBILITY if present; otherwise default to Moving Avg and Power
+				curves.forEach(c => {
+					const key = `chart1::${c.name}`;
+					if (key in CURVE_VISIBILITY) c.visible = CURVE_VISIBILITY[key];
+					else c.visible = (c.name === 'Moving Avg' || c.name === 'Power');
+				});
+
+				// sanitize curve data (ensure numeric and finite) and draw only valid curves
+				curves.forEach(c => { c.data = (c.data || []).map(p => [Number(p[0]), Number(p[1])]).filter(p => isFinite(p[0]) && isFinite(p[1])); });
+				// Render curve paths and give each a data-idx for toggling
+				curves.forEach((c, i) => {
+					if (!c.data || c.data.length < 2) return; // need at least two points to draw a path
+					svg.append("path")
+						.datum(c.data)
+						.attr("class", "curve-line")
+						.attr("data-idx", i)
+						.attr("fill", "none")
+						.attr("stroke", c.visible ? c.color : '#cfcfcf')
+						.attr("stroke-width", 2.5)
+						.attr("stroke-dasharray", c.dash)
+						.attr("opacity", c.visible ? 1 : 0.18)
+						.attr("d", line);
+				});
+
+				// Build interactive legend: clicking an item toggles its visibility
+				const legend = svg.append("g").attr("transform", `translate(${width - 160}, 0)`);
+				const legendItemHeight = 20;
+				curves.forEach((curve, i) => {
+					const g = legend.append('g').attr('transform', `translate(0, ${i * legendItemHeight})`).style('cursor', 'pointer');
+					// color swatch/line
+					g.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('stroke-width', 2.5).attr('stroke-dasharray', curve.dash);
+					// label
+					g.append('text').attr('x', 25).attr('y', 12).text(curve.name).style('font-size', '12px').style('fill', curve.visible ? '#000' : '#999');
+
+					// click handler toggles visibility and persist it
+					g.on('click', () => {
+						curve.visible = !curve.visible;
+						CURVE_VISIBILITY[`chart1::${curve.name}`] = curve.visible;
+						// update path style
+						svg.selectAll(`path.curve-line[data-idx=\"${i}\"]`).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('opacity', curve.visible ? 1 : 0.18);
+						// update legend appearance
+						g.select('line').attr('stroke', curve.visible ? curve.color : '#cfcfcf');
+						g.select('text').style('fill', curve.visible ? '#000' : '#999');
+					});
+				});
+
+				svg.append("text").attr("x", width / 2).attr("y", -margin.top / 2).attr("text-anchor", "middle").style("font-size", "16px").style("font-weight", "bold").text("Car Price vs Mileage");
+			}
+
+
+			// renderPriceVsYearChart
+			// Renders Price vs Year scatterplot with trend overlays. Input: array with numeric `year` and `price`.
+			function renderPriceVsYearChart(data) {
+				const container = document.getElementById("chart2");
+				container.innerHTML = "";
+				const validData = data.filter(d => d.year != null && d.price != null);
+				console.log(`Rendering Price vs Year chart with ${validData.length} records.`);
+				if (validData.length < 2) {
+					container.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100 p-3"><p class="text-muted">Not enough data to display chart.</p></div>';
+					return;
+				}
+				
+				const bounds = container.getBoundingClientRect();
+				const margin = { top: 40, right: 40, bottom: 60, left: 70 };
+				const width = bounds.width - margin.left - margin.right;
+				const height = 450 - margin.top - margin.bottom;
+
+				const svg = d3.select("#chart2").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${bounds.width} 450`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+				const x = d3.scaleLinear().domain([d3.max(validData, d => d.year), d3.min(validData, d => d.year)]).range([0, width]);
+				const y = d3.scaleLinear().domain([0, d3.max(validData, d => d.price)]).range([height, 0]);
+
+				svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickFormat(d3.format("d"))).append("text").attr("x", width / 2).attr("y", 40).attr("fill", "black").text("Year");
+				svg.append("g").call(d3.axisLeft(y)).append("text").attr("transform", "rotate(-90)").attr("y", -50).attr("x", -(height / 2)).attr("fill", "black").text("Price (AED)");
+
+				const tooltip = d3.select("body").selectAll(".tooltip").data([0]).join("div").attr("class", "tooltip").style("opacity", 0);
+				
+				svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.year)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", "#69b3a2")
+					.on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED`).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 28) + "px"); })
+					.on("mouseout", () => tooltip.transition().style("opacity", 0))
+					.on("click", (e, d) => window.open(d.detailPageUrl, "_blank"));
+
+				// avoid NaN in path 'd' by defining only finite points
+				const line = d3.line().defined(d => isFinite(d[0]) && isFinite(d[1])).x(d => x(d[0])).y(d => y(d[1])).curve(d3.curveBasis);
+				const curves = [];
+				const [xMin, xMax] = d3.extent(validData, d => d.year);
+				const curvePoints = Array.from({ length: 101 }, (_, i) => xMin + (i / 100) * (xMax - xMin));
+				
+				const sortedForMA = [...validData].sort((a,b) => a.year - b.year);
+				const movingAverageData = sortedForMA.map((_, i) => { const start = Math.max(0, i - 5), end = Math.min(sortedForMA.length, i + 6); const window = sortedForMA.slice(start, end); return [d3.mean(window, d => d.year), d3.mean(window, d => d.price)]; });
+				curves.push({ data: movingAverageData, color: "blue", dash: null, name: "Moving Avg" });
+
+				const xV = validData.map(d=>d.year), yV = validData.map(d=>d.price), xM = d3.mean(xV);
+				const pC = polynomialRegression(xV.map(d=>d-xM), yV, 2);
+				if (pC.length > 2) curves.push({ data: curvePoints.map(d=>[d,pC[0]+pC[1]*(d-xM)+pC[2]*Math.pow(d-xM,2)]), color: "red", dash: "5,5", name: "Polynomial" });
+
+				// Power-law fit on year vs price (only valid for positive years/prices)
+				{
+					const powerFiltered = validData.filter(d => d.year > 0 && d.price > 0);
+					if (powerFiltered.length > 1) {
+						const xs = powerFiltered.map(d => Math.log(d.year));
+						const ys = powerFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.pow(px === 0 ? 1e-6 : px, b)]), color: "green", dash: "4,2", name: "Power" });
+						}
+					}
+				}
+
+				// Exponential fit (y = a * exp(b * x)) for year vs price
+				{
+					const expFiltered = validData.filter(d => d.price > 0);
+					if (expFiltered.length > 1) {
+						const xs = expFiltered.map(d => d.year);
+						const ys = expFiltered.map(d => Math.log(d.price));
+						const xm = d3.mean(xs), ym = d3.mean(ys);
+						const num = d3.sum(xs.map((v,i) => (v - xm) * (ys[i] - ym)));
+						const den = d3.sum(xs.map(v => (v - xm) * (v - xm)));
+						if (den !== 0) {
+							const b = num / den;
+							const a = Math.exp(ym - b * xm);
+							curves.push({ data: curvePoints.map(px => [px, a * Math.exp(b * px)]), color: "orange", dash: "2,6", name: "Exponential" });
+						}
+					}
+				}
+				
+				// initialize visibility from CURVE_VISIBILITY if present; otherwise default to Moving Avg and Power
+				curves.forEach(c => {
+					const key = `chart2::${c.name}`;
+					if (key in CURVE_VISIBILITY) c.visible = CURVE_VISIBILITY[key];
+					else c.visible = (c.name === 'Moving Avg' || c.name === 'Power');
+				});
+
+				// sanitize curve data and only draw valid curves
+				curves.forEach(c => { c.data = (c.data || []).map(p => [Number(p[0]), Number(p[1])]).filter(p => isFinite(p[0]) && isFinite(p[1])); });
+				// Render curve paths with data-idx for toggling
+				curves.forEach((c, i) => {
+					if (!c.data || c.data.length < 2) return;
+					svg.append("path")
+						.datum(c.data)
+						.attr("class", "curve-line")
+						.attr("data-idx", i)
+						.attr("fill", "none")
+						.attr("stroke", c.visible ? c.color : '#cfcfcf')
+						.attr("stroke-width", 2.5)
+						.attr("stroke-dasharray", c.dash)
+						.attr("opacity", c.visible ? 1 : 0.18)
+						.attr("d", line);
+				});
+
+				// Build interactive legend: clicking an item toggles its visibility
+				const legend = svg.append("g").attr("transform", `translate(${width - 160}, 0)`);
+				const legendItemHeight = 20;
+				curves.forEach((curve, i) => {
+					const g = legend.append('g').attr('transform', `translate(0, ${i * legendItemHeight})`).style('cursor', 'pointer');
+					// color swatch/line
+					g.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 8).attr('y2', 8).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('stroke-width', 2.5).attr('stroke-dasharray', curve.dash);
+					// label
+					g.append('text').attr('x', 25).attr('y', 12).text(curve.name).style('font-size', '12px').style('fill', curve.visible ? '#000' : '#999');
+
+					// click handler toggles visibility and persist it
+					g.on('click', () => {
+						curve.visible = !curve.visible;
+						CURVE_VISIBILITY[`chart2::${curve.name}`] = curve.visible;
+						// update path style
+						svg.selectAll(`path.curve-line[data-idx=\"${i}\"]`).attr('stroke', curve.visible ? curve.color : '#cfcfcf').attr('opacity', curve.visible ? 1 : 0.18);
+						// update legend appearance
+						g.select('line').attr('stroke', curve.visible ? curve.color : '#cfcfcf');
+						g.select('text').style('fill', curve.visible ? '#000' : '#999');
+					});
+				});
+
+				svg.append("text").attr("x", width / 2).attr("y", -margin.top / 2).attr("text-anchor", "middle").style("font-size", "16px").style("font-weight", "bold").text("Car Price vs Year");
+			}
+
+            // --- FILTER POPULATION ---
+
+            const populateMultiSelectFilter=(ul,data,hasAll=false)=>{ul.innerHTML='';if(hasAll){const li=document.createElement('li');li.innerHTML=`<label class="dropdown-item fw-bold"><input class="form-check-input me-2" type="checkbox" value="All" data-type="all-checkbox" checked>All</label>`;ul.appendChild(li);ul.appendChild(document.createElement('hr'))}data.forEach(i=>{const l=document.createElement('li');l.innerHTML=`<label class="dropdown-item fw-normal"><input class="form-check-input me-2" type="checkbox" value="${i}" data-type="item-checkbox" ${hasAll?'checked':''}>${i}</label>`;ul.appendChild(l)})};
+            
+            const populateYearFilter = () => {
+                const years = [...new Set(tableData.map(i => i.year))].filter(Boolean).sort((a, b) => b - a);
+                yearDropdown.innerHTML = '';
+                years.forEach(year => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<a class="dropdown-item" href="#" data-value="${year}">${year}</a>`;
+                    yearDropdown.appendChild(li);
+                });
+            };
+
+            const populatePriceFilters = () => {
+                minPriceDropdown.innerHTML = '';
+                maxPriceDropdown.innerHTML = '';
+                const priceOptions=[5e3,1e4,15e3,2e4,25e3,3e4,4e4,5e4,6e4,7e4,8e4,9e4,1e5,125e3,15e4,175e3,2e5,25e4,3e5,5e5];
+                priceOptions.forEach(price=>{const h=`<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`;minPriceDropdown.innerHTML+=h;maxPriceDropdown.innerHTML+=h});
+            };
+
+            const populateMaxMileageFilter = () => {
+                maxMileageDropdown.innerHTML = '';
+                const mileageOptions=[0,1e4,2e4,3e4,4e4,5e4,6e4,7e4,8e4,9e4,1e5,125e3,15e4,175e3,2e5,3e5,5e5,1e6];
+                mileageOptions.forEach(mileage=>{const h=`<li><a class="dropdown-item" href="#" data-value="${mileage}">${mileage.toLocaleString()} km</a></li>`;maxMileageDropdown.innerHTML+=h});
+            };
+
+            // --- EVENT LISTENERS ---
+			const setupEventListeners = () => {
+				// Stop dropdowns from closing when clicking inside them
+				document.querySelectorAll('.dropdown-menu').forEach(menu => {
+					menu.addEventListener('click', (e) => e.stopPropagation());
+				});
+				
+				// Handle dropdown hover behavior
+				document.querySelectorAll(".dropdown").forEach(el => {
+					const dd = new bootstrap.Dropdown(el.querySelector(".dropdown-toggle"));
+					el.addEventListener("mouseenter", () => dd.show());
+					el.addEventListener("mouseleave", () => dd.hide());
+				});
+
+					// --- Table sorting: click headers to sort ASC / DESC ---
+
+					const initTableSorting = () => {
+						const headers = document.querySelectorAll('#data-table thead th');
+						headers.forEach(th => {
+							const originalKey = th.textContent.trim();
+							th.dataset.key = originalKey;
+							th.style.cursor = 'pointer';
+							th.title = `Sort by ${originalKey}`;
+							let ind = th.querySelector('.sort-indicator');
+							if (!ind) {
+								ind = document.createElement('span');
+								ind.className = 'sort-indicator';
+								ind.style.marginLeft = '6px';
+								th.appendChild(ind);
+							}
+
+							th.addEventListener('click', () => {
+								const key = th.dataset.key;
+
+								// Determine next state: null -> asc -> desc -> null
+								if (sortConfig.key !== key) {
+									sortConfig = { key, dir: 'asc' };
+								} else if (sortConfig.dir === 'asc') {
+									sortConfig.dir = 'desc';
+								} else {
+									// clear sort
+									sortConfig = { key: null, dir: null };
+								}
+
+								// Update indicators
+								document.querySelectorAll('#data-table thead th .sort-indicator').forEach(si => si.textContent = '');
+
+								if (sortConfig && sortConfig.key) {
+									const myInd = th.querySelector('.sort-indicator');
+									if (myInd) myInd.textContent = sortConfig.dir === 'asc' ? '▲' : '▼';
+
+									// apply sort to the currently visible dataset, or tableData if none
+									const source = (Array.isArray(currentViewData) && currentViewData.length >= 0) ? currentViewData : tableData;
+									const sorted = sortData(source, sortConfig.key, sortConfig.dir);
+									currentViewData = sorted;
+									renderTable(sorted);
+								} else {
+									// restore natural filtered order
+									currentViewData = lastFilteredView ? [...lastFilteredView] : (Array.isArray(tableData) ? [...tableData] : []);
+									renderTable(currentViewData);
+								}
+							});
+						});
+					};
+
+					// initialize sorting after table is available
+					initTableSorting();
+
+					// Setup logic for multi-select dropdowns (including search and "All" option)
+				const setupMultiSelect = (ul, search, filterSet, hasAllOption = false) => {
+					ul.addEventListener("change", e => {
+						if (e.target.type !== "checkbox") return;
+
+						if (hasAllOption) {
+							const allCheckbox = ul.querySelector('input[data-type="all-checkbox"]');
+							const itemCheckboxes = ul.querySelectorAll('input[data-type="item-checkbox"]');
+							if (e.target === allCheckbox) {
+								itemCheckboxes.forEach(cb => cb.checked = allCheckbox.checked);
+							} else {
+								allCheckbox.checked = [...itemCheckboxes].every(cb => cb.checked);
+							}
+						}
+						
+						filterSet.clear();
+						ul.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => filterSet.add(cb.value));
+						applyFilters();
+					});
+
+					search.addEventListener("input", e => {
+						const term = e.target.value.toLowerCase();
+						ul.querySelectorAll("li").forEach(li => {
+							const label = li.querySelector("label")?.textContent.toLowerCase();
+							if (label && !li.querySelector('hr')) {
+								li.style.display = label.includes(term) ? "" : "none";
+							}
+						});
+					});
+				};
+
+				// Initialize all multi-select dropdowns
+				setupMultiSelect(makeDropdownList, document.getElementById("make-search"), filters.makes);
+				setupMultiSelect(modelDropdownList, document.getElementById("model-search"), filters.models);
+				setupMultiSelect(bodyTypeDropdownList, document.getElementById("bodyType-search"), filters.bodyTypes, true);
+				setupMultiSelect(specDropdownList, document.getElementById("spec-search"), filters.specs, true);
+
+				// Setup single-select dropdowns
+				yearDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.year = Number(e.target.getAttribute("data-value")); applyFilters(); } });
+				maxMileageDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.mileage.max = Number(e.target.getAttribute("data-value")); applyFilters(); } });
+				minPriceDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.price.min = Number(e.target.getAttribute("data-value")); applyFilters(); } });
+				maxPriceDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.price.max = Number(e.target.getAttribute("data-value")); applyFilters(); } });
+			};
+            // --- INITIAL PAGE LOAD ---
+						const jsonData = {}
+
+
+			// Setup event handlers first since they don't depend on data
+            setupEventListeners();
+
+			// Apply the chosen bootstrap color to filter buttons so they match badges
+			applyFilterColorToUI();
+
+            // Initialize the tableData array with the embedded car data
+            tableData = jsonData.Car;
+            console.log("Loading car data...");
+            
+            // Initialize all filters with the data
+            populateYearFilter();
+            populatePriceFilters();
+            populateMaxMileageFilter();
+            
+            const makes = [...new Set(tableData.map(i => i.make))].sort();
+            const models = [...new Set(tableData.map(i => i.model))].sort();
+            const bodyTypes = [...new Set(tableData.map(i => i.bodyType).filter(Boolean))].sort();
+            const specs = [...new Set(tableData.map(i => i.spec).filter(Boolean))].sort();
+
+            populateMultiSelectFilter(makeDropdownList, makes);
+            populateMultiSelectFilter(modelDropdownList, models);
+            populateMultiSelectFilter(bodyTypeDropdownList, bodyTypes, true);
+            populateMultiSelectFilter(specDropdownList, specs, true);
+
+            // Set initial view data to full dataset
+            currentViewData = [...tableData];
+            
+            // Initial render of the table
+            applyFilters();
+            
+            console.log("Dashboard initialized with", tableData.length, "records");
+
+            tableData = jsonData.Car || [];
+            console.log(`%cLoaded ${tableData.length} car records.`, "color: green;");
+
+            populateMultiSelectFilter(makeDropdownList, [...new Set(tableData.map(item => item.make))].filter(Boolean).sort());
+            populateMultiSelectFilter(modelDropdownList, [...new Set(tableData.map(item => item.model))].filter(Boolean).sort());
+            populateMultiSelectFilter(bodyTypeDropdownList, [...new Set(tableData.map(item => item.bodyType))].filter(Boolean).sort(), true);
+            populateMultiSelectFilter(specDropdownList, [...new Set(tableData.map(item => item.spec))].filter(Boolean).sort(), true);
+            populateYearFilter();
+            populateMaxMileageFilter();
+            populatePriceFilters();
+            
+            setupEventListeners();
+            console.log("Event listeners attached.");
+            
+            // Set initial filter state from DOM (for filters with "All" selected by default)
+            document.querySelectorAll('#bodyType-dropdown input:checked').forEach(cb => filters.bodyTypes.add(cb.value));
+            document.querySelectorAll('#spec-dropdown input:checked').forEach(cb => filters.specs.add(cb.value));
+
+            // Set default filter to Make: Toyota
+            filters.makes.add('Toyota');
+            const defaultMakeCheckbox = makeDropdownList.querySelector('input[value="Toyota"]');
+            if (defaultMakeCheckbox) defaultMakeCheckbox.checked = true;
+            console.log("Set default filter to Make: Toyota.");
+
+			// Set default filter to Model: Camry
+            filters.models.add('Camry');
+            const defaultModelCheckbox = modelDropdownList.querySelector('input[value="Camry"]');
+            if (defaultModelCheckbox) defaultModelCheckbox.checked = true;
+            console.log("Set default filter to Model: Camry.");
+
+
+			// Helper: set a property on an input safely (no-op if element not found)
+			const safeSetInput = (id, prop, value) => {
+				try {
+					const el = document.getElementById(id);
+					if (!el) return false;
+					// prefer using property if available, otherwise setAttribute
+					if (prop in el) el[prop] = value; else el.setAttribute(prop, String(value));
+					return true;
+				} catch (err) {
+					console.warn(`safeSetInput failed for ${id}.${prop}:`, err);
+					return false;
+				}
+			};
+
+			// Set min year to 2000 (ensure filters.year is an object first)
+			if (!filters.year || typeof filters.year !== 'object') filters.year = { min: null };
+			filters.year = 2000;
+			if (safeSetInput('year-min-input-id', 'value', 2000)) console.log('Set min year to 2000.');
+
+			// Set max mileage to 200000
+			filters.mileage.max = 200000;
+			if (safeSetInput('mileage-max-input-id', 'value', 200000)) console.log('Set max mileage to 200000.');
+
+			// Set max price to 250000
+			filters.price.max = 250000;
+			if (safeSetInput('price-max-input-id', 'value', 250000)) console.log('Set max price to 250000.');
+
+            applyFilters();
+
+            console.log("%cDashboard initialization complete.", "color: green; font-weight: bold;");
+            console.timeEnd("Dashboard Initialization");
+        });
+    </script>
+
+</body>
+
+</html>
