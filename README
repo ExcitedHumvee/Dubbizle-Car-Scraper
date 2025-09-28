@@ -9,7 +9,6 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    just give me code changes: table sorting is not working (when i click on the table column header nothing happens)
     add comments in main files
     lil more beautification
     too many filter badges, make aure its grouped
