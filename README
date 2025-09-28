@@ -9,5 +9,7 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    create a new npm script in backend, it should clear all contents from index.html, then it should copy everything from bootstrap.html to index.html, then it should clear the value of object jsonData in index.html, pls note there is a line in file called "const jsonData = {.....}", then it should copy everything from AllCars.json to jsonData object, then it should save the file. 
+	if just a make is selected in the filter, in the model dropdown, show only models for that make (u can refer to whats available in the table for that instant)
+    fix labels (add more labels in graph figures)
+	in the graphs, if the spec is not GCC, show the car as red as supposed to green color
     remove unused npm imports
