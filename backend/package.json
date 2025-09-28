@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "test:api": "node test_api.js",
-    "studio": "npx prisma studio"
+    "studio": "npx prisma studio",
+    "export:all": "node export-all-cars.js"
   },
   "keywords": [],
   "author": "",
