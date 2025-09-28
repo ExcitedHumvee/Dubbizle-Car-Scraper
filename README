@@ -9,7 +9,6 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    add comments in main files
+    in bootstrap.html structure it better add more comments
     lil more beautification
     too many filter badges, make aure its grouped
-    

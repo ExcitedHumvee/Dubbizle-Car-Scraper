@@ -123,14 +123,34 @@
         </div>
     </div>
 
-    <script>
-        const jsonData = {"Car": [
-            // Your car data array here...
-        ]};
+	<script>
+		/*
+		 Dashboard script (bootstrap.html)
 
-        document.addEventListener('DOMContentLoaded', () => {
-            console.time("Dashboard Initialization");
-            console.log("DOM content loaded. Initializing dashboard...");
+		 Structure & conventions:
+		 - jsonData.Car: raw data array embedded below (or replaced at runtime).
+		 - State variables live in the top-level of the DOMContentLoaded handler:
+			 - filters: Set-based filter selections and numeric bounds
+			 - tableData: full dataset
+			 - currentViewData: currently visible rows (after filtering/sorting)
+		 - Key functions:
+			 - applyFilters(): build filteredData from tableData and current filters
+			 - sortData(): helper for sorting arrays by a key and direction
+			 - renderTable(): render rows into the table body
+			 - initTableSorting()/setupEventListeners(): wire up UI interactions
+
+		 Sorting behaviour:
+		 - Headers support a 3-state cycle: ASC -> DESC -> NONE (restore natural filtered order)
+		 - The unsorted filtered snapshot is kept in `lastFilteredView` so 'NONE' restores the expected order.
+		*/
+
+		const jsonData = {"Car": [
+			// Your car data array here...
+		]};
+
+		document.addEventListener('DOMContentLoaded', () => {
+			console.time("Dashboard Initialization");
+			console.log("DOM content loaded. Initializing dashboard...");
 
             // --- STATE MANAGEMENT ---
             const filters = {
@@ -165,6 +185,11 @@
 			let sortConfig = { key: null, dir: null };
 			let lastFilteredView = [];
 
+			// sortData: stable-ish comparator that handles numeric and string values.
+			// Inputs:
+			//  - arr: array of objects
+			//  - key: object property to compare (string)
+			//  - dir: 'asc' or 'desc'
 			const sortData = (arr, key, dir) => {
 				if (!key) return arr;
 				return [...arr].sort((a, b) => {
@@ -186,6 +211,11 @@
 				});
 			};
 
+			// applyFilters: produce a filtered dataset from `tableData` according to `filters`.
+			// Side-effects:
+			//  - updates currentViewData
+			//  - updates charts via renderPriceVsMileageChart & renderPriceVsYearChart
+			//  - updates the UI badges
 			const applyFilters = () => {
 				const filtersJSON = JSON.stringify(filters, (key, value) => (value instanceof Set) ? [...value] : value);
 				console.log("%cApplying Filters...", "color: blue; font-weight: bold;", JSON.parse(filtersJSON));
@@ -228,14 +258,16 @@
 
             // --- RENDERING & HELPER FUNCTIONS ---
 
-            const renderTable = (data) => {
-                console.log(`Rendering table with ${data.length} records.`);
-                tableBody.innerHTML = '';
-                if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="23" class="text-center p-5 text-muted">No data found for the selected filters.</td></tr>`;
-                    return;
-                }
-                const rowsHtml = data.map(row => `
+			// renderTable: purely presentational — converts `data` into tbody rows.
+			// Expects an array of objects with the same keys present in the table header.
+			const renderTable = (data) => {
+				console.log(`Rendering table with ${data.length} records.`);
+				tableBody.innerHTML = '';
+				if (data.length === 0) {
+					tableBody.innerHTML = `<tr><td colspan="23" class="text-center p-5 text-muted">No data found for the selected filters.</td></tr>`;
+					return;
+				}
+				const rowsHtml = data.map(row => `
                     <tr>
                         <td class="px-3 py-2 text-nowrap">${row.listingId||''}</td><td class="px-3 py-2 text-nowrap">${row.make||''}</td><td class="px-3 py-2 text-nowrap">${row.model||''}</td>
                         <td class="px-3 py-2 text-nowrap">${row.year||''}</td><td class="px-3 py-2 text-nowrap">$${row.price?row.price.toLocaleString():''}</td><td class="px-3 py-2 text-nowrap">${row.mileage?row.mileage.toLocaleString():''}</td>
@@ -249,7 +281,6 @@
                 tableBody.innerHTML = rowsHtml;
             };
 
-            // ** RESTORED THIS FUNCTION **
 			const updateBadges = () => {
                 badgesContainer.innerHTML = "";
                 let hasFilters = false;
@@ -302,7 +333,6 @@
                 }
             };
             
-            // ** RESTORED THIS FUNCTION **
             const createBadge = (text, removeCallback) => {
                 const badge = document.createElement("span");
                 badge.className = "badge bg-primary me-2";
@@ -311,8 +341,16 @@
                 return badge;
             };
             
-            function polynomialRegression(x,y,d){const n=x.length;if(n<d+1)return[];let X=[],Y=y.map(v=>[v]);for(let i=0;i<n;i++){let r=[];for(let j=0;j<=d;j++)r.push(Math.pow(x[i],j));X.push(r)}const M=(a,b)=>a.map(r=>b[0].map((_,i)=>r.reduce((s,e,j)=>s+e*b[j][i],0))),T=m=>m[0].map((_,i)=>m.map(r=>r[i]));function I(m){const n=m.length,r=Array(n).fill(0).map(()=>Array(n).fill(0)),t=m.map((r,i)=>[...r,...Array(n).fill(0).map((_,j)=>i===j?1:0)]);for(let i=0;i<n;i++){let p=t[i][i];if(p===0)return null;for(let j=0;j<2*n;j++)t[i][j]/=p;for(let k=0;k<n;k++)if(k!==i){let f=t[k][i];for(let j=0;j<2*n;j++)t[k][j]-=f*t[i][j]}}for(let i=0;i<n;i++)for(let j=0;j<n;j++)r[i][j]=t[i][j+n];return r}const xT=T(X),xTx=M(xT,X),xTxI=I(xTx);if(!xTxI)return[];return M(M(xTxI,xT),Y).map(r=>r[0])}
-            
+
+			// polynomialRegression
+			// Lightweight polynomial regression solver used to fit a curve through (x,y) points.
+			// Inputs: x (array), y (array), d (degree). Returns coefficients [c0, c1, ...].
+			// Note: implemented inline for simplicity; returns [] if singular.
+			function polynomialRegression(x,y,d){const n=x.length;if(n<d+1)return[];let X=[],Y=y.map(v=>[v]);for(let i=0;i<n;i++){let r=[];for(let j=0;j<=d;j++)r.push(Math.pow(x[i],j));X.push(r)}const M=(a,b)=>a.map(r=>b[0].map((_,i)=>r.reduce((s,e,j)=>s+e*b[j][i],0))),T=m=>m[0].map((_,i)=>m.map(r=>r[i]));function I(m){const n=m.length,r=Array(n).fill(0).map(()=>Array(n).fill(0)),t=m.map((r,i)=>[...r,...Array(n).fill(0).map((_,j)=>i===j?1:0)]);for(let i=0;i<n;i++){let p=t[i][i];if(p===0)return null;for(let j=0;j<2*n;j++)t[i][j]/=p;for(let k=0;k<n;k++)if(k!==i){let f=t[k][i];for(let j=0;j<2*n;j++)t[k][j]-=f*t[i][j]}}for(let i=0;i<n;i++)for(let j=0;j<n;j++)r[i][j]=t[i][j+n];return r}const xT=T(X),xTx=M(xT,X),xTxI=I(xTx);if(!xTxI)return[];return M(M(xTxI,xT),Y).map(r=>r[0])}
+
+			// renderPriceVsMileageChart
+			// Renders a D3 scatterplot of Price vs Mileage with moving average and polynomial fit overlays.
+			// Expects an array of objects with numeric `price` and `mileage` fields.
 			function renderPriceVsMileageChart(data) {
 				const container = document.getElementById("chart1");
 				container.innerHTML = "";
@@ -367,6 +405,9 @@
 				svg.append("text").attr("x", width / 2).attr("y", -margin.top / 2).attr("text-anchor", "middle").style("font-size", "16px").style("font-weight", "bold").text("Car Price vs Mileage");
 			}
 
+
+			// renderPriceVsYearChart
+			// Renders Price vs Year scatterplot with trend overlays. Input: array with numeric `year` and `price`.
 			function renderPriceVsYearChart(data) {
 				const container = document.getElementById("chart2");
 				container.innerHTML = "";
@@ -424,7 +465,6 @@
 
             const populateMultiSelectFilter=(ul,data,hasAll=false)=>{ul.innerHTML='';if(hasAll){const li=document.createElement('li');li.innerHTML=`<label class="dropdown-item fw-bold"><input class="form-check-input me-2" type="checkbox" value="All" data-type="all-checkbox" checked>All</label>`;ul.appendChild(li);ul.appendChild(document.createElement('hr'))}data.forEach(i=>{const l=document.createElement('li');l.innerHTML=`<label class="dropdown-item fw-normal"><input class="form-check-input me-2" type="checkbox" value="${i}" data-type="item-checkbox" ${hasAll?'checked':''}>${i}</label>`;ul.appendChild(l)})};
             
-            // ** RESTORED THIS FUNCTION **
             const populateYearFilter = () => {
                 const years = [...new Set(tableData.map(i => i.year))].filter(Boolean).sort((a, b) => b - a);
                 yearDropdown.innerHTML = '';
@@ -435,7 +475,6 @@
                 });
             };
 
-            // ** RESTORED THIS FUNCTION **
             const populatePriceFilters = () => {
                 minPriceDropdown.innerHTML = '';
                 maxPriceDropdown.innerHTML = '';
@@ -443,7 +482,6 @@
                 priceOptions.forEach(price=>{const h=`<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`;minPriceDropdown.innerHTML+=h;maxPriceDropdown.innerHTML+=h});
             };
 
-            // ** RESTORED THIS FUNCTION **
             const populateMaxMileageFilter = () => {
                 maxMileageDropdown.innerHTML = '';
                 const mileageOptions=[0,1e4,2e4,3e4,4e4,5e4,6e4,7e4,8e4,9e4,1e5,125e3,15e4,175e3,2e5,3e5,5e5,1e6];
