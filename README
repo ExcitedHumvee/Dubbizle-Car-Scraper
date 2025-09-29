@@ -9,4 +9,7 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
+    when no make is selected, model search in dropdown doesnt work
+    when there is no make, model filter is not working
+    b33d606 is last commit working very good
     remove unused npm imports

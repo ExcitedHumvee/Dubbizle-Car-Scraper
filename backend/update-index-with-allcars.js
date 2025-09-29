@@ -107,7 +107,7 @@ function main() {
 
     // Write composed content to index.html
     fs.writeFileSync(indexPath, composed, 'utf8');
-    console.log('index.html updated with AllCars.json data');
+    console.log('index.html cleared, updated with latest bootstrap.html and AllCars.json data');
 }
 
 main();
