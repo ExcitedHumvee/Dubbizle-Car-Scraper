@@ -330,6 +330,9 @@
 					const th = document.createElement('th');
 					th.scope = 'col';
 					th.className = 'px-3 py-2 text-nowrap';
+					if (sortConfig && sortConfig.key === colKey) {
+						th.classList.add('table-info'); // Add Bootstrap info class for sorted column
+					}
 					th.draggable = true;
 					th.dataset.colKey = colKey;
 					// user-friendly label: replace underscores and camelCase
