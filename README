@@ -9,8 +9,4 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-	if just a make is selected in the filter, in the model dropdown, show only models for that make (u can refer to whats available in the table for that instant)
-    make changes in in bootstrap.html: for both the graphs, the hover label should also show Year, Mileage, Spec
-	make changes in in bootstrap.html: in the graphs, if the spec is not GCC, show the car as red as supposed to green color (the points)
-	rearrange order of table columns, move spec and detailPageURL more to left; also date added/ updated not present, is it possible to reorder the columns?
     remove unused npm imports

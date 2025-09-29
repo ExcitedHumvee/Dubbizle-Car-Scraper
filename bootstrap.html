@@ -130,6 +130,7 @@
             };
             let tableData = [];
 			let currentViewData = [];
+            let makeModelMap = new Map(); // New: Map to store make to models relationship
 
             // --- DOM ELEMENTS ---
             const tableBody = document.querySelector('#data-table tbody');
@@ -144,6 +145,9 @@
             const maxPriceDropdown = document.getElementById('max-price-dropdown');
             const visualsContainer = document.getElementById('visuals-container');
             const promptContainer = document.getElementById('prompt-container');
+
+            // --- FILTER POPULATION HELPERS ---
+            const populateMultiSelectFilter=(ul,data,hasAll=false)=>{console.log(`populateMultiSelectFilter: Populating ${ul.parentElement.id} with data:`, data);ul.innerHTML='';if(hasAll){const li=document.createElement('li');li.innerHTML=`<label class="dropdown-item fw-bold"><input class="form-check-input me-2" type="checkbox" value="All" data-type="all-checkbox" checked>All</label>`;ul.appendChild(li);ul.appendChild(document.createElement('hr'))}data.forEach(i=>{const isChecked = filters.models.has(i); console.log(`populateMultiSelectFilter: Checking item ${i}, filters.models has it: ${isChecked}`); const l=document.createElement('li');l.innerHTML=`<label class="dropdown-item fw-normal"><input class="form-check-input me-2" type="checkbox" value="${i}" data-type="item-checkbox" ${isChecked ? 'checked' : ''}>${i}</label>`;ul.appendChild(l); console.log(`populateMultiSelectFilter: Added item to ${ul.parentElement.id}: ${i}, checked: ${isChecked}`);})};
 
 			// --- UI theme config ---
 			// Default color used when a mapping isn't provided
@@ -454,7 +458,8 @@
 				}, FILTER_COLOR_MAP['make-dropdown']));
                 filters.models.forEach(m => addBadge(`Model: ${m}`, () => {
                     filters.models.delete(m);
-                    document.querySelector(`#model-dropdown input[value="${m}"]`).checked = false;
+                    const checkbox = document.querySelector(`#model-dropdown ul input[value="${m}"]`);
+                    if (checkbox) checkbox.checked = false;
                     applyFilters();
 				}, FILTER_COLOR_MAP['model-dropdown']));
 
@@ -799,7 +804,56 @@
 
             // --- FILTER POPULATION ---
 
-            const populateMultiSelectFilter=(ul,data,hasAll=false)=>{ul.innerHTML='';if(hasAll){const li=document.createElement('li');li.innerHTML=`<label class="dropdown-item fw-bold"><input class="form-check-input me-2" type="checkbox" value="All" data-type="all-checkbox" checked>All</label>`;ul.appendChild(li);ul.appendChild(document.createElement('hr'))}data.forEach(i=>{const l=document.createElement('li');l.innerHTML=`<label class="dropdown-item fw-normal"><input class="form-check-input me-2" type="checkbox" value="${i}" data-type="item-checkbox" ${hasAll?'checked':''}>${i}</label>`;ul.appendChild(l)})};
+            const updateModelDropdown = () => {
+                console.log("updateModelDropdown: Function entered.");
+                console.log("updateModelDropdown: Initiated.");
+                console.log("updateModelDropdown: Current selected makes (filters.makes):", [...filters.makes]);
+
+                let modelsToDisplay = [];
+                if (filters.makes.size > 0 && !filters.makes.has('All')) {
+                    console.log("updateModelDropdown: Makes are selected. Filtering models based on selected makes using makeModelMap.");
+                    let combinedModels = new Set();
+                    filters.makes.forEach(make => {
+                        if (makeModelMap.has(make)) {
+                            makeModelMap.get(make).forEach(model => combinedModels.add(model));
+                        }
+                    });
+                    modelsToDisplay = [...combinedModels].filter(Boolean).sort();
+                    console.log("updateModelDropdown: Models filtered by make (modelsToDisplay):", modelsToDisplay);
+                } else {
+                    console.log("updateModelDropdown: No makes selected or 'All' selected. Displaying all models.");
+                    modelsToDisplay = [...new Set(tableData.map(item => item.model))].filter(Boolean).sort();
+                    console.log("updateModelDropdown: All models (modelsToDisplay):", modelsToDisplay);
+                }
+
+                console.log("updateModelDropdown: modelsToDisplay array before populateMultiSelectFilter:", modelsToDisplay);
+                console.log("updateModelDropdown: modelDropdownList element:", modelDropdownList);
+                populateMultiSelectFilter(modelDropdownList, modelsToDisplay);
+                console.log("updateModelDropdown: Model dropdown repopulated with modelsToDisplay. Current modelDropdownList.innerHTML:", modelDropdownList.innerHTML);
+                // Clear the model search input
+                document.getElementById("model-search").value = "";
+                // Ensure all list items are visible after clearing search
+                modelDropdownList.querySelectorAll("li").forEach(li => {
+                    li.style.display = "";
+                });
+
+                const currentModels = new Set(modelsToDisplay);
+                const modelsToRemove = [];
+                filters.models.forEach(selectedModel => {
+                    if (!currentModels.has(selectedModel)) {
+                        modelsToRemove.push(selectedModel);
+                    }
+                });
+                if (modelsToRemove.length > 0) {
+                    console.log("updateModelDropdown: Clearing invalid model selections:", modelsToRemove);
+                    modelsToRemove.forEach(model => filters.models.delete(model));
+                    console.log("updateModelDropdown: filters.models after clearing invalid selections:", [...filters.models]);
+                }
+
+                // The populateMultiSelectFilter already handles setting the checked state based on filters.models
+                // No need for a separate loop here.
+                console.log("updateModelDropdown: Checkbox states updated. Final selected models (filters.models):", [...filters.models]);
+            };
             
             const populateYearFilter = () => {
                 const years = [...new Set(tableData.map(i => i.year))].filter(Boolean).sort((a, b) => b - a);
@@ -893,7 +947,7 @@
 					initTableSorting();
 
 					// Setup logic for multi-select dropdowns (including search and "All" option)
-				const setupMultiSelect = (ul, search, filterSet, hasAllOption = false) => {
+				const setupMultiSelect = (ul, search, filterSet, hasAllOption = false, callback = () => {}) => {
 					ul.addEventListener("change", e => {
 						if (e.target.type !== "checkbox") return;
 
@@ -909,7 +963,12 @@
 						
 						filterSet.clear();
 						ul.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => filterSet.add(cb.value));
+						console.log(`setupMultiSelect: Filter set updated for ${ul.id}. Current state:`, [...filterSet]);
 						applyFilters();
+						console.log(`setupMultiSelect: Executing callback for ${ul.id}.`);
+						if (typeof callback === 'function') {
+							callback();
+						}
 					});
 
 					search.addEventListener("input", e => {
@@ -924,8 +983,10 @@
 				};
 
 				// Initialize all multi-select dropdowns
-				setupMultiSelect(makeDropdownList, document.getElementById("make-search"), filters.makes);
-				setupMultiSelect(modelDropdownList, document.getElementById("model-search"), filters.models);
+				setupMultiSelect(makeDropdownList, document.getElementById("make-search"), filters.makes, false, () => {
+					updateModelDropdown();
+				});
+				// setupMultiSelect(modelDropdownList, document.getElementById("model-search"), filters.models); // Removed this line
 				setupMultiSelect(bodyTypeDropdownList, document.getElementById("bodyType-search"), filters.bodyTypes, true);
 				setupMultiSelect(specDropdownList, document.getElementById("spec-search"), filters.specs, true);
 
@@ -950,9 +1011,17 @@
 			// Apply the chosen bootstrap color to filter buttons so they match badges
 			applyFilterColorToUI();
 
-            // Initialize the tableData array with the embedded car data
             tableData = jsonData.Car;
-            console.log("Loading car data...");
+            // Populate makeModelMap
+            tableData.forEach(car => {
+                if (car.make && car.model) {
+                    if (!makeModelMap.has(car.make)) {
+                        makeModelMap.set(car.make, new Set());
+                    }
+                    makeModelMap.get(car.make).add(car.model);
+                }
+            });
+            console.log("makeModelMap populated:", makeModelMap);
             
             // Initialize all filters with the data
             populateYearFilter();
@@ -960,14 +1029,15 @@
             populateMaxMileageFilter();
             
             const makes = [...new Set(tableData.map(i => i.make))].sort();
-            const models = [...new Set(tableData.map(i => i.model))].sort();
             const bodyTypes = [...new Set(tableData.map(i => i.bodyType).filter(Boolean))].sort();
             const specs = [...new Set(tableData.map(i => i.spec).filter(Boolean))].sort();
 
             populateMultiSelectFilter(makeDropdownList, makes);
-            populateMultiSelectFilter(modelDropdownList, models);
             populateMultiSelectFilter(bodyTypeDropdownList, bodyTypes, true);
             populateMultiSelectFilter(specDropdownList, specs, true);
+
+            setupEventListeners(); // Called here, after all data is ready
+            console.log("Event listeners attached.");
 
             // Set initial view data to full dataset
             currentViewData = [...tableData];
@@ -977,19 +1047,16 @@
             
             console.log("Dashboard initialized with", tableData.length, "records");
 
-            tableData = jsonData.Car || [];
             console.log(`%cLoaded ${tableData.length} car records.`, "color: green;");
 
-            populateMultiSelectFilter(makeDropdownList, [...new Set(tableData.map(item => item.make))].filter(Boolean).sort());
-            populateMultiSelectFilter(modelDropdownList, [...new Set(tableData.map(item => item.model))].filter(Boolean).sort());
-            populateMultiSelectFilter(bodyTypeDropdownList, [...new Set(tableData.map(item => item.bodyType))].filter(Boolean).sort(), true);
-            populateMultiSelectFilter(specDropdownList, [...new Set(tableData.map(item => item.spec))].filter(Boolean).sort(), true);
-            populateYearFilter();
-            populateMaxMileageFilter();
-            populatePriceFilters();
-            
-            setupEventListeners();
-            console.log("Event listeners attached.");
+            // Removed duplicate populateMultiSelectFilter calls
+            // populateMultiSelectFilter(makeDropdownList, [...new Set(tableData.map(item => item.make))].filter(Boolean).sort());
+            // populateMultiSelectFilter(modelDropdownList, [...new Set(tableData.map(item => item.model))].filter(Boolean).sort());
+            // populateMultiSelectFilter(bodyTypeDropdownList, [...new Set(tableData.map(item => item.bodyType))].filter(Boolean).sort(), true);
+            // populateMultiSelectFilter(specDropdownList, [...new Set(tableData.map(item => item.spec))].filter(Boolean).sort(), true);
+            // populateYearFilter();
+            // populateMaxMileageFilter();
+            // populatePriceFilters();
             
             // Set initial filter state from DOM (for filters with "All" selected by default)
             document.querySelectorAll('#bodyType-dropdown input:checked').forEach(cb => filters.bodyTypes.add(cb.value));
@@ -1006,6 +1073,8 @@
             const defaultModelCheckbox = modelDropdownList.querySelector('input[value="Camry"]');
             if (defaultModelCheckbox) defaultModelCheckbox.checked = true;
             console.log("Set default filter to Model: Camry.");
+
+            updateModelDropdown(); // Moved here
 
 
 			// Helper: set a property on an input safely (no-op if element not found)
