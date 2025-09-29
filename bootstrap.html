@@ -547,15 +547,21 @@
 
 				const svg = d3.select("#chart1").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${bounds.width} 450`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 				const x = d3.scaleLinear().domain([0, d3.max(validData, d => d.mileage)]).range([0, width]);
-				const y = d3.scaleLinear().domain([0, d3.max(validData, d => d.price)]).range([height, 0]);
+				const yMaxMileage = d3.max(validData, d => d.price);
+				let y;
+				if (yMaxMileage === undefined || isNaN(yMaxMileage) || yMaxMileage === 0) {
+					y = d3.scaleLinear().domain([0, 1]).range([height, 0]); // Default scale
+				} else {
+					y = d3.scaleLinear().domain([0, yMaxMileage]).range([height, 0]);
+				}
 
 				svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x)).append("text").attr("x", width / 2).attr("y", 40).attr("fill", "black").text("Mileage (km)");
 				svg.append("g").call(d3.axisLeft(y)).append("text").attr("transform", "rotate(-90)").attr("y", -50).attr("x", -(height / 2)).attr("fill", "black").text("Price (AED)");
 				
 				const tooltip = d3.select("body").selectAll(".tooltip").data([0]).join("div").attr("class", "tooltip").style("opacity", 0);
 				
-				svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.mileage)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", "#69b3a2")
-					.on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED`).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 28) + "px"); })
+				svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.mileage)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", d => d.spec === 'GCC' ? '#69b3a2' : '#d8716e')
+					.on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED<br/>Year: ${d.year}<br/>Mileage: ${d.mileage ? d.mileage.toLocaleString() + ' km' : 'N/A'}<br/>Spec: ${d.spec || 'N/A'}`).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 28) + "px"); })
 					.on("mouseout", () => tooltip.transition().style("opacity", 0))
 					.on("click", (e, d) => window.open(d.detailPageUrl, "_blank"));
 
@@ -676,15 +682,21 @@
 
 				const svg = d3.select("#chart2").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${bounds.width} 450`).append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 				const x = d3.scaleLinear().domain([d3.max(validData, d => d.year), d3.min(validData, d => d.year)]).range([0, width]);
-				const y = d3.scaleLinear().domain([0, d3.max(validData, d => d.price)]).range([height, 0]);
+				const yMaxYear = d3.max(validData, d => d.price);
+				let y;
+				if (yMaxYear === undefined || isNaN(yMaxYear) || yMaxYear === 0) {
+					y = d3.scaleLinear().domain([0, 1]).range([height, 0]); // Default scale
+				} else {
+					y = d3.scaleLinear().domain([0, yMaxYear]).range([height, 0]);
+				}
 
 				svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickFormat(d3.format("d"))).append("text").attr("x", width / 2).attr("y", 40).attr("fill", "black").text("Year");
 				svg.append("g").call(d3.axisLeft(y)).append("text").attr("transform", "rotate(-90)").attr("y", -50).attr("x", -(height / 2)).attr("fill", "black").text("Price (AED)");
 
 				const tooltip = d3.select("body").selectAll(".tooltip").data([0]).join("div").attr("class", "tooltip").style("opacity", 0);
 				
-				svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.year)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", "#69b3a2")
-					.on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED`).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 28) + "px"); })
+				svg.selectAll("circle").data(validData).join("circle").attr("class", "point").attr("cx", d => x(d.year)).attr("cy", d => y(d.price)).attr("r", 6).style("fill", d => d.spec === 'GCC' ? '#69b3a2' : '#d8716e')
+					.on("mouseover", (e, d) => { tooltip.transition().style("opacity", .9); tooltip.html(`Title: ${d.title}<br/>Price: ${d.price.toLocaleString()} AED<br/>Year: ${d.year}<br/>Mileage: ${d.mileage ? d.mileage.toLocaleString() + ' km' : 'N/A'}<br/>Spec: ${d.spec || 'N/A'}`).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 28) + "px"); })
 					.on("mouseout", () => tooltip.transition().style("opacity", 0))
 					.on("click", (e, d) => window.open(d.detailPageUrl, "_blank"));
 
