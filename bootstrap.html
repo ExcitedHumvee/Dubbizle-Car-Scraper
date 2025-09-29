@@ -78,36 +78,11 @@
             </div>
             <div class="card shadow-sm" style="flex-grow:3;overflow:hidden;position:relative;">
                 <div class="overflow-auto h-100 table-responsive">
-                    <table id="data-table" class="table table-striped table-hover table-sm">
-                        <thead class="table-light sticky-top">
-                            <tr>
-                                <th scope="col" class="px-3 py-2 text-nowrap">listingId</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">make</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">model</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">year</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">price</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">mileage</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">title</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">bodyType</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">engineCapacity</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">horsepower</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">transmissionType</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">cylinders</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">interiorColor</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">exteriorColor</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">doors</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">seatingCapacity</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">trim</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">warranty</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">fuelType</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">spec</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">sellerType</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">location</th>
-                                <th scope="col" class="px-3 py-2 text-nowrap">detailPageUrl</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+					<table id="data-table" class="table table-striped table-hover table-sm">
+						<!-- Headers are rendered dynamically to allow drag-and-drop reordering -->
+						<thead id="data-table-head" class="table-light sticky-top"></thead>
+						<tbody></tbody>
+					</table>
                 </div>
             </div>
         </div>
@@ -315,30 +290,148 @@
 				updateBadges();
 			};
 
-            // --- RENDERING & HELPER FUNCTIONS ---
+			// --- RENDERING & HELPER FUNCTIONS ---
 
-			// renderTable: purely presentational — converts `data` into tbody rows.
-			// Expects an array of objects with the same keys present in the table header.
+			// Column ordering state persists to localStorage so user rearrangement survives refresh
+			const DEFAULT_COLUMN_ORDER = [
+				'listingId','make','model','year','price','mileage','title','spec','bodyType','transmissionType','cylinders','engineCapacity','horsepower','interiorColor','exteriorColor','doors','seatingCapacity','trim','warranty','fuelType','sellerType','location','createdAt','last_updated','detailPageUrl'
+			];
+
+			let columnOrder = (() => {
+				try {
+					const stored = localStorage.getItem('columnOrder');
+					if (stored) return JSON.parse(stored);
+				} catch (e) { /* ignore */ }
+				return DEFAULT_COLUMN_ORDER.slice();
+			})();
+
+			const tableHead = document.getElementById('data-table-head');
+
+			function formatDate(ts) {
+				if (ts === null || ts === undefined) return '';
+				const n = Number(ts);
+				if (Number.isNaN(n)) return '';
+				const d = new Date(n);
+				return d.toLocaleString();
+			}
+
+			function getCellHtml(row, key) {
+				if (key === 'price') return row.price ? `$${row.price.toLocaleString()}` : '';
+				if (key === 'detailPageUrl') return `<a href="${row.detailPageUrl || '#'}" target="_blank">View</a>`;
+				if (key === 'createdAt' || key === 'last_updated') return formatDate(row[key]);
+				if (row[key] === null || row[key] === undefined) return '';
+				return String(row[key]);
+			}
+
+			function renderTableHeaders() {
+				// build header row with draggable th elements
+				const tr = document.createElement('tr');
+				columnOrder.forEach((colKey, idx) => {
+					const th = document.createElement('th');
+					th.scope = 'col';
+					th.className = 'px-3 py-2 text-nowrap';
+					th.draggable = true;
+					th.dataset.colKey = colKey;
+					// user-friendly label: replace underscores and camelCase
+					const label = colKey.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+					th.innerHTML = `<span class="drag-handle me-2" style="cursor:grab">☰</span>${label}`;
+
+					// drag handlers
+					th.addEventListener('dragstart', (e) => {
+						e.dataTransfer.setData('text/plain', colKey);
+						th.classList.add('dragging');
+					});
+					th.addEventListener('dragend', () => {
+						th.classList.remove('dragging');
+					});
+					th.addEventListener('dragover', (e) => {
+						e.preventDefault();
+						th.classList.add('drag-over');
+					});
+					th.addEventListener('dragleave', () => th.classList.remove('drag-over'));
+					th.addEventListener('drop', (e) => {
+						e.preventDefault();
+						th.classList.remove('drag-over');
+						const fromKey = e.dataTransfer.getData('text/plain');
+						const toKey = th.dataset.colKey;
+						if (!fromKey || !toKey || fromKey === toKey) return;
+						const fromIdx = columnOrder.indexOf(fromKey);
+						const toIdx = columnOrder.indexOf(toKey);
+						if (fromIdx === -1 || toIdx === -1) return;
+						// move fromIdx to toIdx
+						columnOrder.splice(fromIdx, 1);
+						columnOrder.splice(toIdx, 0, fromKey);
+						localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
+						renderTable(currentViewData || tableData);
+					});
+
+					tr.appendChild(th);
+
+					// Add sort indicator span
+					const sortIndicator = document.createElement('span');
+					sortIndicator.className = 'sort-indicator ms-1';
+					// initialize indicator based on current sortConfig
+					if (sortConfig && sortConfig.key === colKey) {
+						sortIndicator.textContent = sortConfig.dir === 'asc' ? '▲' : '▼';
+					}
+					th.appendChild(sortIndicator);
+
+					th.addEventListener('click', (e) => {
+						// Prevent sorting when clicking the drag-handle
+						if (e.target && e.target.classList && e.target.classList.contains('drag-handle')) return;
+
+						const key = th.dataset.colKey;
+						if (!key) return;
+
+						if (sortConfig.key !== key) {
+							sortConfig = { key, dir: 'asc' };
+						} else if (sortConfig.dir === 'asc') {
+							sortConfig.dir = 'desc';
+						} else {
+							// clear sort
+							sortConfig = { key: null, dir: null };
+						}
+
+						// Update indicators for all headers
+						document.querySelectorAll('#data-table thead th .sort-indicator').forEach(si => si.textContent = '');
+						if (sortConfig && sortConfig.key) {
+							const myInd = th.querySelector('.sort-indicator');
+							if (myInd) myInd.textContent = sortConfig.dir === 'asc' ? '▲' : '▼';
+							// apply sort directly to current view or full table data
+							const source = (Array.isArray(currentViewData) && currentViewData.length >= 0) ? currentViewData : tableData;
+							const sorted = sortData(source, sortConfig.key, sortConfig.dir);
+							currentViewData = sorted;
+							renderTable(sorted);
+						} else {
+							// restore natural filtered order
+							currentViewData = lastFilteredView ? [...lastFilteredView] : (Array.isArray(tableData) ? [...tableData] : []);
+							renderTable(currentViewData);
+						}
+					});
+				});
+				tableHead.innerHTML = '';
+				tableHead.appendChild(tr);
+			}
+
+			// renderTable: uses columnOrder to decide which columns to show and in what order
 			const renderTable = (data) => {
 				console.log(`Rendering table with ${data.length} records.`);
 				tableBody.innerHTML = '';
-				if (data.length === 0) {
-					tableBody.innerHTML = `<tr><td colspan="23" class="text-center p-5 text-muted">No data found for the selected filters.</td></tr>`;
+				if (!Array.isArray(data) || data.length === 0) {
+					tableBody.innerHTML = `<tr><td colspan="${columnOrder.length}" class="text-center p-5 text-muted">No data found for the selected filters.</td></tr>`;
+					renderTableHeaders();
 					return;
 				}
-				const rowsHtml = data.map(row => `
-                    <tr>
-                        <td class="px-3 py-2 text-nowrap">${row.listingId||''}</td><td class="px-3 py-2 text-nowrap">${row.make||''}</td><td class="px-3 py-2 text-nowrap">${row.model||''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.year||''}</td><td class="px-3 py-2 text-nowrap">$${row.price?row.price.toLocaleString():''}</td><td class="px-3 py-2 text-nowrap">${row.mileage?row.mileage.toLocaleString():''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.title||''}</td><td class="px-3 py-2 text-nowrap">${row.bodyType||''}</td><td class="px-3 py-2 text-nowrap">${row.engineCapacity||''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.horsepower||''}</td><td class="px-3 py-2 text-nowrap">${row.transmissionType||''}</td><td class="px-3 py-2 text-nowrap">${row.cylinders||''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.interiorColor||''}</td><td class="px-3 py-2 text-nowrap">${row.exteriorColor||''}</td><td class="px-3 py-2 text-nowrap">${row.doors||''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.seatingCapacity||''}</td><td class="px-3 py-2 text-nowrap">${row.trim||''}</td><td class="px-3 py-2 text-nowrap">${row.warranty||''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.fuelType||''}</td><td class="px-3 py-2 text-nowrap">${row.spec||''}</td><td class="px-3 py-2 text-nowrap">${row.sellerType||''}</td>
-                        <td class="px-3 py-2 text-nowrap">${row.location||''}</td><td class="px-3 py-2 text-nowrap"><a href="${row.detailPageUrl}" target="_blank">View</a></td>
-                    </tr>`).join('');
-                tableBody.innerHTML = rowsHtml;
-            };
+
+				renderTableHeaders();
+
+				const rowsHtml = data.map(row => {
+					const cells = columnOrder.map(col => `<td class="px-3 py-2 text-nowrap">${getCellHtml(row, col)||''}</td>`).join('');
+					return `<tr>${cells}</tr>`;
+				}).join('');
+
+				tableBody.innerHTML = rowsHtml;
+			};
 
 			const updateBadges = () => {
                 badgesContainer.innerHTML = "";
