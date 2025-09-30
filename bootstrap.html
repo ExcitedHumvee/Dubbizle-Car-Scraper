@@ -245,6 +245,40 @@
 				});
 			};
 
+			const logFilteredStats = (data) => {
+				if (!data || data.length === 0) {
+					console.log("%cFiltered Stats: No data for the current selection.", "color: orange;");
+					return;
+				}
+
+				const distinctMakes = [...new Set(data.map(d => d.make))];
+				const distinctModels = [...new Set(data.map(d => d.model))];
+				const distinctSpecs = [...new Set(data.map(d => d.spec).filter(Boolean))];
+
+				// Helper to extract a numeric column, filtering out non-numeric/null values
+				const getNumericColumn = (arr, key) => arr.map(d => d[key]).filter(val => val != null && !isNaN(Number(val))).map(Number);
+
+				const mileages = getNumericColumn(data, 'mileage');
+				const prices = getNumericColumn(data, 'price');
+				const years = getNumericColumn(data, 'year');
+
+				const highestMileage = mileages.length > 0 ? Math.max(...mileages) : 'N/A';
+				const lowestPrice = prices.length > 0 ? Math.min(...prices) : 'N/A';
+				const highestPrice = prices.length > 0 ? Math.max(...prices) : 'N/A';
+				const lowestYear = years.length > 0 ? Math.min(...years) : 'N/A';
+				
+				console.group("%cFiltered Data Statistics", "color: cyan; font-weight: bold;");
+				console.log(`Record Count: ${data.length}`);
+				console.log("Distinct Makes:", distinctMakes);
+				console.log("Distinct Models:", distinctModels);
+				console.log("Distinct Specs:", distinctSpecs);
+				console.log("Highest Mileage:", highestMileage !== 'N/A' ? highestMileage.toLocaleString() : 'N/A');
+				console.log("Lowest Price:", lowestPrice !== 'N/A' ? lowestPrice.toLocaleString() : 'N/A');
+				console.log("Highest Price:", highestPrice !== 'N/A' ? highestPrice.toLocaleString() : 'N/A');
+				console.log("Lowest Year:", lowestYear);
+				console.groupEnd();
+			};
+
 			// applyFilters: produce a filtered dataset from `tableData` according to `filters`.
 			// Side-effects:
 			//  - updates currentViewData
@@ -259,6 +293,7 @@
 					updateBadges();
 					currentViewData = []; // Clear the view data
 					renderTable([]); // Render an empty table
+					logFilteredStats([]); // Log stats for empty data
 					return;
 				}
 				toggleVisuals(true);
@@ -272,6 +307,9 @@
 				if (filters.mileage.max) filteredData = filteredData.filter(item => (item.mileage || 0) <= filters.mileage.max);
 				if (filters.price.min) filteredData = filteredData.filter(item => item.price >= filters.price.min);
 				if (filters.price.max) filteredData = filteredData.filter(item => item.price <= filters.price.max);
+
+				// Log stats of the filtered results
+				logFilteredStats(filteredData);
 
 				// snapshot the natural filtered order so we can restore it when clearing sort
 				lastFilteredView = [...filteredData];
@@ -365,7 +403,7 @@
 						columnOrder.splice(fromIdx, 1);
 						columnOrder.splice(toIdx, 0, fromKey);
 						localStorage.setItem('columnOrder', JSON.stringify(columnOrder));
-						renderTable(currentViewData || tableData);
+						renderTable(currentViewData || tableData); // check here tableData
 					});
 
 					tr.appendChild(th);
