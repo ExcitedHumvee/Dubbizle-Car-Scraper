@@ -26,3 +26,28 @@ HAVING
   COUNT(ch.listingId) >= 2
 ORDER BY
   history_count DESC;
+
+--All models with their counts
+SELECT
+  c.model,
+  COUNT(*) AS model_count
+FROM
+  Car AS c
+GROUP BY
+  c.model
+ORDER BY
+  model_count DESC;
+
+-- Makes with the count of models for each make
+SELECT
+  c.make,
+  COUNT(DISTINCT c.model) AS model_count
+FROM
+  Car AS c
+GROUP BY
+  c.make
+ORDER BY
+  model_count DESC;
+
+
+

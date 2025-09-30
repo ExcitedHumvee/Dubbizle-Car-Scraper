@@ -9,7 +9,7 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    when no make is selected, model search in dropdown doesnt work
+    make changes in bootstrap.html: model search in dropdown doesnt work. please keep in mind that it was working in commit b33d606
     when there is no make, model filter is not working
     b33d606 is last commit working very good
     remove unused npm imports
