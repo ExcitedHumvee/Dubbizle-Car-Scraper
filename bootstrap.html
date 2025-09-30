@@ -316,7 +316,7 @@
 			}
 
 			function getCellHtml(row, key) {
-				if (key === 'price') return row.price ? `$${row.price.toLocaleString()}` : '';
+				if (key === 'price') return row.price ? `${row.price.toLocaleString()}` : '';
 				if (key === 'detailPageUrl') return `<a href="${row.detailPageUrl || '#'}" target="_blank">View</a>`;
 				if (key === 'createdAt' || key === 'last_updated') return formatDate(row[key]);
 				if (row[key] === null || row[key] === undefined) return '';
