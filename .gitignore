@@ -16,3 +16,4 @@
 
 
 *.png
+/backend/prisma/prisma/dev.db

@@ -13,7 +13,8 @@
     "test:api": "node test_api.js",
     "studio": "npx prisma studio",
     "export:all": "node export-all-cars.js",
-    "sync:index": "node update-index-with-allcars.js"
+    "sync:index": "node update-index-with-allcars.js",
+    "db:vacuum": "npx prisma db execute --file vacuum.sql"
   },
   "keywords": [],
   "author": "",
