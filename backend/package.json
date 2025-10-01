@@ -5,16 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "scrape": "node scraper/scraper.js && node scraper/save-to-db.js && node scraper/countCars.js && node export-all-cars.js && node update-index-with-allcars.js",
+    "scrape": "node scraper/scraper.js && node scraper/save-to-db.js && node scraper/countCars.js && npx prisma db execute --file reclaim-db-space.sql && node export-all-cars.js && node update-index-with-allcars.js",
     "scrape:test": "node scraper/test.js",
-    "db:save": "node scraper/save-to-db.js && node scraper/countCars.js",
+    "db:save": "node scraper/save-to-db.js && node scraper/countCars.js && npx prisma db execute --file reclaim-db-space.sql",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "test:api": "node test_api.js",
     "studio": "npx prisma studio",
     "export:all": "node export-all-cars.js",
     "sync:index": "node update-index-with-allcars.js",
-    "db:vacuum": "npx prisma db execute --file vacuum.sql"
+    "db:reclaim": "npx prisma db execute --file reclaim-db-space.sql"
   },
   "keywords": [],
   "author": "",
