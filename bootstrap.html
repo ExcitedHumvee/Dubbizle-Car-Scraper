@@ -326,6 +326,10 @@
 				renderPriceVsMileageChart(filteredData);
 				renderPriceVsYearChart(filteredData);
 				updateBadges();
+				console.log("Attempting to repopulate Model dropdown based on filtered data...");
+				const models = [...new Set(filteredData.map(i => i.model))].sort();
+				populateMultiSelectFilter(modelDropdownList, );
+				console.log("Model dropdown repopulated.");
 			};
 
 			// --- RENDERING & HELPER FUNCTIONS ---
