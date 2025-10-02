@@ -546,6 +546,12 @@
 				const badge = document.createElement("span");
 				// use the provided bootstrap bg color so badges match their filter buttons
 				badge.className = `badge bg-${color} me-2`;
+
+                // Set text color for light backgrounds for better contrast
+                if (['light', 'warning', 'info'].includes(color)) {
+                    badge.classList.add('text-dark');
+                }
+
 				// choose close icon contrast: white for dark backgrounds, default for light
 				const closeClass = (color === 'light' || color === 'warning' || color === 'info' || color === 'secondary') ? 'btn-close' : 'btn-close btn-close-white';
 				badge.innerHTML = `${text} <button type="button" class="${closeClass} ms-2" aria-label="Close"></button>`;

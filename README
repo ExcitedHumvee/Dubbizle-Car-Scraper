@@ -9,8 +9,5 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    make changes in bootstrap.html: everytime a a filter is applied (or removed) print to the console distinct makes, distinct models, distinct specs, highest mileage, lowest price, hightest price, lowest year of the filtered results. please keep in mind when the page loads, there are some initial filters applied do print the stats for that too
-    make changes in bootstrap.html: after a make is selected, only models of that make should be shown in model dropdown. make sure tthe model search in dropdown works
     need to scrape from multiple links
-    fix lable text of the badges: body type and year badges should have their font as black rather than white
     remove $ from price dropdown
