@@ -300,6 +300,7 @@
 				}
 				toggleVisuals(true);
 
+				// --- Main filtering for charts and table ---
 				let filteredData = [...tableData];
 				if (filters.makes.size > 0 && !filters.makes.has('All')) filteredData = filteredData.filter(item => filters.makes.has(item.make));
 				if (filters.models.size > 0 && !filters.models.has('All')) filteredData = filteredData.filter(item => filters.models.has(item.model));
@@ -328,9 +329,18 @@
 				renderPriceVsMileageChart(filteredData);
 				renderPriceVsYearChart(filteredData);
 				updateBadges();
-				console.log("Attempting to repopulate Model dropdown based on filtered data...");
-				const models = [...new Set(filteredData.map(i => i.model))].sort();
-				populateMultiSelectFilter(modelDropdownList, models, filters.models); // update models based on filtered data, can be optimized
+
+				// --- Repopulate Model dropdown with specific filters ---
+				console.log("Attempting to repopulate Model dropdown based on Make, BodyType, and Spec filters...");
+				
+				// Create a separate dataset for model options, filtered only by relevant categories
+				let modelOptionsData = [...tableData];
+				if (filters.makes.size > 0 && !filters.makes.has('All')) modelOptionsData = modelOptionsData.filter(item => filters.makes.has(item.make));
+				if (filters.bodyTypes.size > 0 && !filters.bodyTypes.has('All')) modelOptionsData = modelOptionsData.filter(item => filters.bodyTypes.has(item.bodyType));
+				if (filters.specs.size > 0 && !filters.specs.has('All')) modelOptionsData = modelOptionsData.filter(item => filters.specs.has(item.spec));
+
+				const models = [...new Set(modelOptionsData.map(i => i.model))].sort();
+				populateMultiSelectFilter(modelDropdownList, models, filters.models);
 				console.log("Model dropdown repopulated.");
 			};
 
