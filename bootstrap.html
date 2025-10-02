@@ -533,8 +533,8 @@
                 // Handle other filters
 				if (filters.year) addBadge(`Min Year: ${filters.year}`, () => { filters.year = null; applyFilters(); }, FILTER_COLOR_MAP['year-dropdown']);
 				if (filters.mileage.max) addBadge(`Max Mileage: ${filters.mileage.max.toLocaleString()}`, () => { filters.mileage.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-mileage-dropdown']);
-				if (filters.price.min) addBadge(`Min Price: $${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }, FILTER_COLOR_MAP['min-price-dropdown']);
-				if (filters.price.max) addBadge(`Max Price: $${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-price-dropdown']);
+				if (filters.price.min) addBadge(`Min Price: ${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }, FILTER_COLOR_MAP['min-price-dropdown']);
+				if (filters.price.max) addBadge(`Max Price: ${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-price-dropdown']);
                 
                 // If, after all checks, no specific filters are applied, show the placeholder text.
                 if (!hasFilters) {
@@ -890,7 +890,7 @@
                 minPriceDropdown.innerHTML = '';
                 maxPriceDropdown.innerHTML = '';
                 const priceOptions=[5e3,1e4,15e3,2e4,25e3,3e4,4e4,5e4,6e4,7e4,8e4,9e4,1e5,125e3,15e4,175e3,2e5,25e4,3e5,5e5];
-                priceOptions.forEach(price=>{const h=`<li><a class="dropdown-item" href="#" data-value="${price}">$${price.toLocaleString()}</a></li>`;minPriceDropdown.innerHTML+=h;maxPriceDropdown.innerHTML+=h});
+                priceOptions.forEach(price=>{const h=`<li><a class="dropdown-item" href="#" data-value="${price}">${price.toLocaleString()}</a></li>`;minPriceDropdown.innerHTML+=h;maxPriceDropdown.innerHTML+=h});
             };
 
             const populateMaxMileageFilter = () => {
