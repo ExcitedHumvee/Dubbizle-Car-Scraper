@@ -290,7 +290,7 @@
 
 				if (filters.makes.size === 0 && filters.models.size === 0 && (filters.bodyTypes.has("All") || filters.bodyTypes.size === 0)) {
 					let allModels = [...new Set(tableData.map(i => i.model))].sort();
-					populateMultiSelectFilter(modelDropdownList, allModels); // update models when all filters are cleared, can be optimized
+					populateMultiSelectFilter(modelDropdownList, allModels, filters.models); // update models when all filters are cleared, can be optimized
 					toggleVisuals(false);
 					updateBadges();
 					currentViewData = []; // Clear the view data
@@ -330,7 +330,7 @@
 				updateBadges();
 				console.log("Attempting to repopulate Model dropdown based on filtered data...");
 				const models = [...new Set(filteredData.map(i => i.model))].sort();
-				populateMultiSelectFilter(modelDropdownList, models); // update models based on filtered data, can be optimized
+				populateMultiSelectFilter(modelDropdownList, models, filters.models); // update models based on filtered data, can be optimized
 				console.log("Model dropdown repopulated.");
 			};
 
@@ -842,9 +842,24 @@
 			}
 
             // --- FILTER POPULATION ---
+			const populateMultiSelectFilter = (ul, data, selectionSet, hasAll = false) => {
+                ul.innerHTML = '';
+                if (hasAll) {
+                    const li = document.createElement('li');
+                    // Check if 'All' is in the selection set for 'hasAll' filters
+                    li.innerHTML = `<label class="dropdown-item fw-bold"><input class="form-check-input me-2" type="checkbox" value="All" data-type="all-checkbox" ${selectionSet.has('All') ? 'checked' : ''}>All</label>`;
+                    ul.appendChild(li);
+                    ul.appendChild(document.createElement('hr'));
+                }
+                data.forEach(i => {
+                    const l = document.createElement('li');
+                    // An item is checked if it's in the selectionSet
+                    const isChecked = selectionSet.has(i);
+                    l.innerHTML = `<label class="dropdown-item fw-normal"><input class="form-check-input me-2" type="checkbox" value="${i}" data-type="item-checkbox" ${isChecked ? 'checked' : ''}>${i}</label>`;
+                    ul.appendChild(l);
+                });
+            };           
 
-            const populateMultiSelectFilter=(ul,data,hasAll=false)=>{ul.innerHTML='';if(hasAll){const li=document.createElement('li');li.innerHTML=`<label class="dropdown-item fw-bold"><input class="form-check-input me-2" type="checkbox" value="All" data-type="all-checkbox" checked>All</label>`;ul.appendChild(li);ul.appendChild(document.createElement('hr'))}data.forEach(i=>{const l=document.createElement('li');l.innerHTML=`<label class="dropdown-item fw-normal"><input class="form-check-input me-2" type="checkbox" value="${i}" data-type="item-checkbox" ${hasAll?'checked':''}>${i}</label>`;ul.appendChild(l)})};
-            
             const populateYearFilter = () => {
                 const years = [...new Set(tableData.map(i => i.year))].filter(Boolean).sort((a, b) => b - a);
                 yearDropdown.innerHTML = '';
@@ -1008,10 +1023,10 @@
             const bodyTypes = [...new Set(tableData.map(i => i.bodyType).filter(Boolean))].sort();
             const specs = [...new Set(tableData.map(i => i.spec).filter(Boolean))].sort();
 
-            populateMultiSelectFilter(makeDropdownList, makes);
-            populateMultiSelectFilter(modelDropdownList, models);
-            populateMultiSelectFilter(bodyTypeDropdownList, bodyTypes, true);
-            populateMultiSelectFilter(specDropdownList, specs, true);
+            populateMultiSelectFilter(makeDropdownList, makes, filters.makes);
+            populateMultiSelectFilter(modelDropdownList, models, filters.models);
+            populateMultiSelectFilter(bodyTypeDropdownList, bodyTypes, filters.bodyTypes, true);
+            populateMultiSelectFilter(specDropdownList, specs, filters.specs, true);
 
             // Set initial view data to full dataset
             currentViewData = [...tableData];
@@ -1024,10 +1039,6 @@
             tableData = jsonData.Car || [];
             console.log(`%cLoaded ${tableData.length} car records.`, "color: green;");
 
-            populateMultiSelectFilter(makeDropdownList, [...new Set(tableData.map(item => item.make))].filter(Boolean).sort());
-            populateMultiSelectFilter(modelDropdownList, [...new Set(tableData.map(item => item.model))].filter(Boolean).sort());
-            populateMultiSelectFilter(bodyTypeDropdownList, [...new Set(tableData.map(item => item.bodyType))].filter(Boolean).sort(), true);
-            populateMultiSelectFilter(specDropdownList, [...new Set(tableData.map(item => item.spec))].filter(Boolean).sort(), true);
             populateYearFilter();
             populateMaxMileageFilter();
             populatePriceFilters();
