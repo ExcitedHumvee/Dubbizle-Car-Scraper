@@ -289,6 +289,8 @@
 				console.log("%cApplying Filters...", "color: blue; font-weight: bold;", JSON.parse(filtersJSON));
 
 				if (filters.makes.size === 0 && filters.models.size === 0 && (filters.bodyTypes.has("All") || filters.bodyTypes.size === 0)) {
+					let allModels = [...new Set(tableData.map(i => i.model))].sort();
+					populateMultiSelectFilter(modelDropdownList, allModels); // update models when all filters are cleared, can be optimized
 					toggleVisuals(false);
 					updateBadges();
 					currentViewData = []; // Clear the view data
@@ -326,6 +328,10 @@
 				renderPriceVsMileageChart(filteredData);
 				renderPriceVsYearChart(filteredData);
 				updateBadges();
+				console.log("Attempting to repopulate Model dropdown based on filtered data...");
+				const models = [...new Set(filteredData.map(i => i.model))].sort();
+				populateMultiSelectFilter(modelDropdownList, models); // update models based on filtered data, can be optimized
+				console.log("Model dropdown repopulated.");
 			};
 
 			// --- RENDERING & HELPER FUNCTIONS ---
