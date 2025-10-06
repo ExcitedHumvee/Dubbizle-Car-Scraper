@@ -1,3 +1,4 @@
+git add .; git commit -m "up"; git push;
 gemini -m gemini-2.5-flash
 incase u did git commit ammend git push --force-with-lease origin main
 cd backend    
