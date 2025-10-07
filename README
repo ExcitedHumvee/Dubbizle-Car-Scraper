@@ -11,5 +11,5 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    reorg project structure
+    reorg project structure: get rid of backend folder, 
     need to scrape from multiple links
