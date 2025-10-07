@@ -1,0 +1,79 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Car {
+  listingId         String        @id
+  make              String?
+  model             String?
+  year              Int?
+  mileage           Int?
+  price             Int?
+  title             String?
+  spec              String?
+  isPremium         Boolean?
+  bodyType          String?
+  engineCapacity    String?
+  horsepower        String?
+  transmissionType  String?
+  cylinders         Int?
+  interiorColor     String?
+  exteriorColor     String?
+  doors             String?
+  seatingCapacity   String?
+  trim              String?
+  warranty          String?
+  fuelType          String?
+  motorsTrim        String?
+  sellerType        String?
+  location          String?
+  neighbourhood     String?
+  detailPageUrl     String?
+  isNegotiable      Boolean?
+  thumbnailUrl      String?
+  vehicleReference  String?
+  isVerifiedUser    Boolean?
+  createdAt         DateTime?
+  added             DateTime?
+  last_updated      DateTime
+  history           CarHistory[]
+  features          CarFeature[]
+
+  @@index([make])
+  @@index([model])
+  @@index([year])
+  @@index([mileage])
+  @@index([price])
+  @@index([bodyType])
+  @@index([transmissionType])
+  @@index([fuelType])
+  @@index([location])
+}
+
+model CarCache {
+  id           Int      @id @default(autoincrement())
+  data         String
+  last_updated DateTime @updatedAt
+}
+
+model CarHistory {
+  history_id  Int      @id @default(autoincrement())
+  car         Car?     @relation(fields: [listingId], references: [listingId])
+  listingId   String?
+  price       Int?
+  mileage     Int?
+  changed_at  DateTime
+}
+
+model CarFeature {
+  feature_id   Int    @id @default(autoincrement())
+  car          Car    @relation(fields: [listingId], references: [listingId])
+  listingId    String
+  feature_type String // 'badge', 'extra', or 'technical'
+  feature_name String
+}
