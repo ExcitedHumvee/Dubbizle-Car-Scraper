@@ -47,45 +47,76 @@ async function main() {
 
         const existingCar = await prisma.car.findUnique({
           where: { listingId },
+          include: {
+            engineCapacity: true,
+            horsepower: true,
+            doors: true,
+            seatingCapacity: true,
+          },
         });
 
-        const carPayload = {
-          ...carInfo,
-          listingId,
-          price: carInfo.price ? parseInt(carInfo.price) : null,
-          mileage: carInfo.mileage ? parseInt(carInfo.mileage) : null,
-          year: carInfo.year ? parseInt(carInfo.year) : null,
-          cylinders: carInfo.cylinders ? parseInt(carInfo.cylinders) : null,
-          createdAt: carInfo.createdAt ? new Date(carInfo.createdAt) : null,
-          added: carInfo.added ? new Date(carInfo.added) : null,
-        };
-        
         const relationalPayload = {};
         const fieldsToNormalize = [
             'make', 'model', 'spec', 'bodyType', 'transmissionType', 'fuelType', 'location', 'neighbourhood', 'sellerType', 'trim', 'warranty', 'motorsTrim'
         ];
         const colorFields = ['interiorColor', 'exteriorColor'];
 
+        // Extract relational fields from carInfo and prepare relationalPayload
+        const carInfoForPayload = { ...carInfo }; // Create a copy to modify
         for (const field of fieldsToNormalize) {
-            if (carInfo[field]) {
+            if (carInfoForPayload[field]) {
                 relationalPayload[field] = {
                     connectOrCreate: {
-                        where: { name: carInfo[field] },
-                        create: { name: carInfo[field] },
+                        where: { name: carInfoForPayload[field] },
+                        create: { name: carInfoForPayload[field] },
                     },
                 };
+                delete carInfoForPayload[field]; // Remove from carInfoForPayload
             }
         }
         for (const field of colorFields) {
-            if (carInfo[field]) {
+            if (carInfoForPayload[field]) {
                 relationalPayload[field] = {
                     connectOrCreate: {
-                        where: { name: carInfo[field] },
-                        create: { name: carInfo[field] },
+                        where: { name: carInfoForPayload[field] },
+                        create: { name: carInfoForPayload[field] },
                     },
                 };
+                delete carInfoForPayload[field]; // Remove from carInfoForPayload
             }
         }
+
+        // Handle new normalized fields
+        const newNormalizedFields = {};
+        const normalizedFields = ['engineCapacity', 'horsepower', 'doors', 'seatingCapacity'];
+        for (const field of normalizedFields) {
+            if (carInfoForPayload[field]) {
+                newNormalizedFields[field] = {
+                    connectOrCreate: {
+                        where: { value: carInfoForPayload[field] },
+                        create: { value: carInfoForPayload[field] },
+                    },
+                };
+                delete carInfoForPayload[field]; // Remove from carInfoForPayload
+            }
+        }
+
+        const carPayload = {
+          listingId,
+          year: carInfoForPayload.year ? parseInt(carInfoForPayload.year) : null,
+          mileage: carInfoForPayload.mileage ? parseInt(carInfoForPayload.mileage) : null,
+          price: carInfoForPayload.price ? parseInt(carInfoForPayload.price) : null,
+          title: carInfoForPayload.title || null,
+          isPremium: carInfoForPayload.isPremium || null,
+          cylinders: carInfoForPayload.cylinders ? parseInt(carInfoForPayload.cylinders) : null,
+          detailPageUrl: carInfoForPayload.detailPageUrl || null,
+          isNegotiable: carInfoForPayload.isNegotiable || null,
+          thumbnailUrl: carInfoForPayload.thumbnailUrl || null,
+          vehicleReference: carInfoForPayload.vehicleReference || null,
+          isVerifiedUser: carInfoForPayload.isVerifiedUser || null,
+          createdAt: carInfoForPayload.createdAt ? new Date(carInfoForPayload.createdAt) : null,
+          added: carInfoForPayload.added ? new Date(carInfoForPayload.added) : null,
+        };
 
 
         if (existingCar) {
@@ -113,7 +144,25 @@ async function main() {
 
           delete dataToUpdate.listingId;
 
-          if (Object.keys(dataToUpdate).length > 0 && hasChanges) {
+          // Handle new normalized fields update/creation/disconnection for existing car
+          const newNormalizedUpdateData = {};
+          for (const field of normalizedFields) {
+              if (newNormalizedFields[field]) { // If incoming data has this field
+                  if (existingCar[field]) { // If existing car has this field
+                      newNormalizedUpdateData[field] = {
+                          update: { value: carInfoForPayload[field] },
+                      };
+                  } else { // If existing car does not have this field
+                      newNormalizedUpdateData[field] = {
+                          create: { value: carInfoForPayload[field] },
+                      };
+                  }
+              } else if (existingCar[field]) { // If incoming data doesn't have it, but existing car does
+                  newNormalizedUpdateData[field] = { disconnect: true };
+              }
+          }
+
+          if (Object.keys(dataToUpdate).length > 0 || Object.keys(newNormalizedUpdateData).length > 0) {
             dataToUpdate.last_updated = fileTimestamp;
             const priceChanged = dataToUpdate.price !== undefined && existingCar.price !== dataToUpdate.price;
             const mileageChanged = dataToUpdate.mileage !== undefined && existingCar.mileage !== dataToUpdate.mileage;
@@ -131,7 +180,7 @@ async function main() {
 
             await prisma.car.update({
               where: { listingId },
-              data: {...dataToUpdate, ...relationalPayload},
+              data: {...dataToUpdate, ...relationalPayload, ...newNormalizedUpdateData},
             });
             updatedCars++;
           } else {
@@ -143,6 +192,7 @@ async function main() {
             data: {
               ...carPayload,
               ...relationalPayload,
+              ...newNormalizedFields, // Add new normalized fields here
               last_updated: fileTimestamp,
               features: {
                 create: [

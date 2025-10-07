@@ -24,6 +24,10 @@ async function exportAllCars() {
                 trim: true,
                 warranty: true,
                 motorsTrim: true,
+                engineCapacity: true,
+                horsepower: true,
+                doors: true,
+                seatingCapacity: true,
             }
         });
 
@@ -52,6 +56,20 @@ async function exportAllCars() {
                 }
                 delete flatCar[rel];
             }
+
+            // Flatten new normalized fields
+            if (flatCar.engineCapacity) {
+                flatCar.engineCapacity = flatCar.engineCapacity.value;
+            }
+            if (flatCar.horsepower) {
+                flatCar.horsepower = flatCar.horsepower.value;
+            }
+            if (flatCar.doors) {
+                flatCar.doors = flatCar.doors.value;
+            }
+            if (flatCar.seatingCapacity) {
+                flatCar.seatingCapacity = flatCar.seatingCapacity.value;
+            }
             
             // also delete the id fields
             delete flatCar.makeId;
@@ -68,6 +86,10 @@ async function exportAllCars() {
             delete flatCar.trimId;
             delete flatCar.warrantyId;
             delete flatCar.motorsTrimId;
+            delete flatCar.engineCapacityId;
+            delete flatCar.horsepowerId;
+            delete flatCar.doorsId;
+            delete flatCar.seatingCapacityId;
 
             return flatCar;
         });

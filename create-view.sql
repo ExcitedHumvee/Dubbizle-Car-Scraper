@@ -6,11 +6,11 @@ SELECT
   c.price,
   c.title,
   c.isPremium,
-  c.engineCapacity,
-  c.horsepower,
+  ec.value AS engineCapacity,
+  hp.value AS horsepower,
   c.cylinders,
-  c.doors,
-  c.seatingCapacity,
+  d.value AS doors,
+  sc.value AS seatingCapacity,
   c.detailPageUrl,
   c.isNegotiable,
   c.thumbnailUrl,
@@ -35,6 +35,10 @@ SELECT
   motorsTrim.name AS motorsTrim
 FROM
   Car AS c
+LEFT JOIN EngineCapacity AS ec ON c.engineCapacityId = ec.id
+LEFT JOIN Horsepower AS hp ON c.horsepowerId = hp.id
+LEFT JOIN Doors AS d ON c.doorsId = d.id
+LEFT JOIN SeatingCapacity AS sc ON c.seatingCapacityId = sc.id
 LEFT JOIN Make AS make ON c.makeId = make.id
 LEFT JOIN Model AS model ON c.modelId = model.id
 LEFT JOIN Spec AS spec ON c.specId = spec.id

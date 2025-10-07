@@ -27,6 +27,10 @@ ALTER TABLE "Car" DROP COLUMN "sellerType";
 ALTER TABLE "Car" DROP COLUMN "trim";
 ALTER TABLE "Car" DROP COLUMN "warranty";
 ALTER TABLE "Car" DROP COLUMN "motorsTrim";
+ALTER TABLE "Car" DROP COLUMN "engineCapacity";
+ALTER TABLE "Car" DROP COLUMN "horsepower";
+ALTER TABLE "Car" DROP COLUMN "doors";
+ALTER TABLE "Car" DROP COLUMN "seatingCapacity";
 
 -- Reclaim unused space
 VACUUM;

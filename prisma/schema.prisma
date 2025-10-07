@@ -14,11 +14,7 @@ model Car {
   price             Int?
   title             String?
   isPremium         Boolean?
-  engineCapacity    String?
-  horsepower        String?
   cylinders         Int?
-  doors             String?
-  seatingCapacity   String?
   detailPageUrl     String?
   isNegotiable      Boolean?
   thumbnailUrl      String?
@@ -29,6 +25,15 @@ model Car {
   last_updated      DateTime
   history           CarHistory[]
   features          CarFeature[]
+
+  engineCapacity    EngineCapacity? @relation(fields: [engineCapacityId], references: [id])
+  engineCapacityId  Int?
+  horsepower        Horsepower?     @relation(fields: [horsepowerId], references: [id])
+  horsepowerId      Int?
+  doors             Doors?          @relation(fields: [doorsId], references: [id])
+  doorsId           Int?
+  seatingCapacity   SeatingCapacity? @relation(fields: [seatingCapacityId], references: [id])
+  seatingCapacityId Int?
 
   make              Make?     @relation(fields: [makeId], references: [id])
   makeId            Int?
@@ -172,4 +177,28 @@ model CarFeature {
   listingId    String
   feature_type String // 'badge', 'extra', or 'technical'
   feature_name String
+}
+
+model EngineCapacity {
+  id    Int     @id @default(autoincrement())
+  value String  @unique
+  cars  Car[]
+}
+
+model Horsepower {
+  id    Int     @id @default(autoincrement())
+  value String  @unique
+  cars  Car[]
+}
+
+model Doors {
+  id    Int     @id @default(autoincrement())
+  value String  @unique
+  cars  Car[]
+}
+
+model SeatingCapacity {
+  id    Int     @id @default(autoincrement())
+  value String  @unique
+  cars  Car[]
 }

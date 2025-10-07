@@ -1,6 +1,6 @@
 -- spec counts
 SELECT c.spec, COUNT(*) AS spec_count
-FROM Car AS c
+FROM Car_details AS c
 GROUP BY c.spec;
 
 -- cars and count of history, and also price history, also price history difference
@@ -17,7 +17,7 @@ SELECT
   COUNT(ch.listingId) AS history_count,
   GROUP_CONCAT(ch.mileage) AS history_mileage
 FROM
-  Car AS c
+  Car_details  AS c
 LEFT JOIN
   CarHistory AS ch ON c.listingId = ch.listingId
 GROUP BY
@@ -32,7 +32,7 @@ SELECT
   c.model,
   COUNT(*) AS model_count
 FROM
-  Car AS c
+  Car_details AS c
 GROUP BY
   c.model
 ORDER BY
@@ -43,11 +43,20 @@ SELECT
   c.make,
   COUNT(DISTINCT c.model) AS model_count
 FROM
-  Car AS c
+  Car_details AS c
 GROUP BY
   c.make
 ORDER BY
   model_count DESC;
+
+
+
+SELECT name
+FROM sqlite_master
+WHERE type='table'
+AND name NOT LIKE 'sqlite_%';
+
+PRAGMA page_size;
 
 
 
