@@ -1067,17 +1067,17 @@
             document.querySelectorAll('#bodyType-dropdown input:checked').forEach(cb => filters.bodyTypes.add(cb.value));
             document.querySelectorAll('#spec-dropdown input:checked').forEach(cb => filters.specs.add(cb.value));
 
-            // Set default filter to Make: Toyota
-            filters.makes.add('Toyota');
-            const defaultMakeCheckbox = makeDropdownList.querySelector('input[value="Toyota"]');
+            // Set default filter to Make: Nissan
+            filters.makes.add('Nissan');
+            const defaultMakeCheckbox = makeDropdownList.querySelector('input[value="Nissan"]');
             if (defaultMakeCheckbox) defaultMakeCheckbox.checked = true;
-            console.log("Set default filter to Make: Toyota.");
+            console.log("Set default filter to Make: Nissan.");
 
-			// Set default filter to Model: Camry
-            filters.models.add('Camry');
-            const defaultModelCheckbox = modelDropdownList.querySelector('input[value="Camry"]');
+			// Set default filter to Model: Kicks
+            filters.models.add('Kicks');
+            const defaultModelCheckbox = modelDropdownList.querySelector('input[value="Kicks"]');
             if (defaultModelCheckbox) defaultModelCheckbox.checked = true;
-            console.log("Set default filter to Model: Camry.");
+            console.log("Set default filter to Model: Kicks.");
 
 
 			// Helper: set a property on an input safely (no-op if element not found)
