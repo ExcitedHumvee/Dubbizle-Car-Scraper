@@ -367,7 +367,7 @@
 				const n = Number(ts);
 				if (Number.isNaN(n)) return '';
 				const d = new Date(n);
-				return d.toLocaleString();
+				return d.toLocaleDateString('en-GB');
 			}
 
 			function getCellHtml(row, key) {

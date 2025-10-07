@@ -11,6 +11,6 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    dates in index.html should be dd/mm/yyyy not mm/dd/yyyy
+    dates in bootstrap.html table should be dd/mm/yyyy not mm/dd/yyyy
     reorg project structure
     need to scrape from multiple links
