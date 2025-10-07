@@ -1094,18 +1094,18 @@
 				}
 			};
 
-			// Set min year to 2000 (ensure filters.year is an object first)
+			// Set min year to 2019 (ensure filters.year is an object first)
 			if (!filters.year || typeof filters.year !== 'object') filters.year = { min: null };
-			filters.year = 2000;
-			if (safeSetInput('year-min-input-id', 'value', 2000)) console.log('Set min year to 2000.');
+			filters.year = 2019;
+			if (safeSetInput('year-min-input-id', 'value', 2019)) console.log('Set min year to 2019.');
 
-			// Set max mileage to 200000
-			filters.mileage.max = 200000;
-			if (safeSetInput('mileage-max-input-id', 'value', 200000)) console.log('Set max mileage to 200000.');
+			// Set max mileage to 70000
+			filters.mileage.max = 70000;
+			if (safeSetInput('mileage-max-input-id', 'value', 70000)) console.log('Set max mileage to 70000.');
 
-			// Set max price to 250000
-			filters.price.max = 250000;
-			if (safeSetInput('price-max-input-id', 'value', 250000)) console.log('Set max price to 250000.');
+			// Set max price to 70000
+			filters.price.max = 70000;
+			if (safeSetInput('price-max-input-id', 'value', 70000)) console.log('Set max price to 70000.');
 
             applyFilters();
 
