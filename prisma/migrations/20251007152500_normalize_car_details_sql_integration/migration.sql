@@ -1,3 +1,12 @@
+-- Drop the Car_details view before schema changes
+DROP VIEW IF EXISTS Car_details;
+
+
+
+-- Reclaim unused space
+VACUUM;
+
+-- Recreate the Car_details view after schema changes
 CREATE VIEW Car_details AS
 SELECT
   c.listingId,

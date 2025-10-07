@@ -49,8 +49,7 @@ GROUP BY
 ORDER BY
   model_count DESC;
 
-
-
+-- List all tables
 SELECT name
 FROM sqlite_master
 WHERE type='table'
@@ -58,5 +57,43 @@ AND name NOT LIKE 'sqlite_%';
 
 PRAGMA page_size;
 
+-- Find byte size of each table (working)
+ANALYZE;
+WITH TableStats AS (
+    SELECT
+        m.name AS table_name,
+        -- Attempt to extract the first number from the 'stat' string, which is the page count
+        CAST(
+            CASE
+                -- If stat has a space, extract the integer before it
+                WHEN INSTR(s.stat, ' ') > 0
+                THEN SUBSTR(s.stat, 1, INSTR(s.stat, ' ') - 1)
+                -- Otherwise, assume the entire string is the page count
+                ELSE s.stat
+            END
+        AS INTEGER) AS page_count_from_stat
+    FROM
+        sqlite_master AS m
+    LEFT JOIN
+        sqlite_stat1 AS s ON m.name = s.tbl AND s.idx IS NULL
+    WHERE
+        m.type = 'table'
+        AND m.name NOT LIKE 'sqlite_%'
+)
+SELECT
+    table_name,
+    -- Default page count to 0 if NULL (table is empty/un-analyzed)
+    IFNULL(page_count_from_stat, 0) AS total_pages,
+    -- Get the global page size
+    (SELECT page_size FROM pragma_page_size()) AS page_size_bytes,
+    -- Calculate Size in MB
+    ROUND(
+        (IFNULL(page_count_from_stat, 0) * (SELECT page_size FROM pragma_page_size()) / 1024.0 / 1024.0),
+        3
+    ) AS size_mb
+FROM
+    TableStats
+ORDER BY
+    size_mb DESC;
 
 
