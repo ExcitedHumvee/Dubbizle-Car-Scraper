@@ -8,7 +8,70 @@ const prisma = new PrismaClient();
 async function exportAllCars() {
     try {
         console.log('Fetching all cars from the database...');
-        const cars = await prisma.car.findMany();
+        const cars = await prisma.car.findMany({
+            include: {
+                make: true,
+                model: true,
+                spec: true,
+                bodyType: true,
+                transmissionType: true,
+                fuelType: true,
+                location: true,
+                neighbourhood: true,
+                interiorColor: true,
+                exteriorColor: true,
+                sellerType: true,
+                trim: true,
+                warranty: true,
+                motorsTrim: true,
+            }
+        });
+
+        const flattenedCars = cars.map(car => {
+            const flatCar = { ...car };
+            const fieldsToFlatten = [
+                { rel: 'make', field: 'make' },
+                { rel: 'model', field: 'model' },
+                { rel: 'spec', field: 'spec' },
+                { rel: 'bodyType', field: 'bodyType' },
+                { rel: 'transmissionType', field: 'transmissionType' },
+                { rel: 'fuelType', field: 'fuelType' },
+                { rel: 'location', field: 'location' },
+                { rel: 'neighbourhood', field: 'neighbourhood' },
+                { rel: 'interiorColor', field: 'interiorColor' },
+                { rel: 'exteriorColor', field: 'exteriorColor' },
+                { rel: 'sellerType', field: 'sellerType' },
+                { rel: 'trim', field: 'trim' },
+                { rel: 'warranty', field: 'warranty' },
+                { rel: 'motorsTrim', field: 'motorsTrim' },
+            ];
+
+            for (const { rel, field } of fieldsToFlatten) {
+                if (flatCar[rel]) {
+                    flatCar[field] = flatCar[rel].name;
+                }
+                delete flatCar[rel];
+            }
+            
+            // also delete the id fields
+            delete flatCar.makeId;
+            delete flatCar.modelId;
+            delete flatCar.specId;
+            delete flatCar.bodyTypeId;
+            delete flatCar.transmissionTypeId;
+            delete flatCar.fuelTypeId;
+            delete flatCar.locationId;
+            delete flatCar.neighbourhoodId;
+            delete flatCar.interiorColorId;
+            delete flatCar.exteriorColorId;
+            delete flatCar.sellerTypeId;
+            delete flatCar.trimId;
+            delete flatCar.warrantyId;
+            delete flatCar.motorsTrimId;
+
+            return flatCar;
+        });
+
 
         // Normalize values: Date -> epoch ms, boolean -> 1/0, recursively for arrays/objects
         function normalizeValue(val) {
@@ -26,7 +89,7 @@ async function exportAllCars() {
             return val;
         }
 
-        const normalized = cars.map((c) => normalizeValue(c));
+        const normalized = flattenedCars.map((c) => normalizeValue(c));
 
         const out = { Car: normalized };
 

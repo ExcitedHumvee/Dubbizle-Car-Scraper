@@ -4,12 +4,14 @@
   "description": "Backend for Dubbizle Car Scraper",
   "main": "index.js",
   "scripts": {
-    "scrape": "prisma generate && prisma migrate dev && node scraper/scraper.js && node scraper/save-to-db.js && node scraper/countCars.js && npx prisma db execute --file reclaim-db-space.sql && node export-cars-from-db.js && node update-index-html-with-new-cars.js",
+    "scrape": "prisma generate && node scraper/scraper.js && node scraper/save-to-db.js && node scraper/countCars.js && npx prisma db execute --file reclaim-db-space.sql && node export-cars-from-db.js && node update-index-html-with-new-cars.js",
     "scrape:test": "node scraper/test.js",
     "db:save": "node scraper/save-to-db.js && node scraper/countCars.js && npx prisma db execute --file reclaim-db-space.sql",
     "db:reclaim": "npx prisma db execute --file reclaim-db-space.sql",
     "prisma:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate deploy",
+    "db:drop-old-columns": "npx prisma db execute --file drop-old-columns.sql",
+    "db:create-view": "npx prisma db execute --file create-view.sql",
     "studio": "npx prisma studio",
     "export:all": "node export-cars-from-db.js",
     "sync:index": "node update-index-html-with-new-cars.js"

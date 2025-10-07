@@ -9,30 +9,16 @@ generator client {
 
 model Car {
   listingId         String        @id
-  make              String?
-  model             String?
   year              Int?
   mileage           Int?
   price             Int?
   title             String?
-  spec              String?
   isPremium         Boolean?
-  bodyType          String?
   engineCapacity    String?
   horsepower        String?
-  transmissionType  String?
   cylinders         Int?
-  interiorColor     String?
-  exteriorColor     String?
   doors             String?
   seatingCapacity   String?
-  trim              String?
-  warranty          String?
-  fuelType          String?
-  motorsTrim        String?
-  sellerType        String?
-  location          String?
-  neighbourhood     String?
   detailPageUrl     String?
   isNegotiable      Boolean?
   thumbnailUrl      String?
@@ -44,16 +30,126 @@ model Car {
   history           CarHistory[]
   features          CarFeature[]
 
-  @@index([make])
-  @@index([model])
+  make              Make?     @relation(fields: [makeId], references: [id])
+  makeId            Int?
+  model             Model?    @relation(fields: [modelId], references: [id])
+  modelId           Int?
+  spec              Spec?     @relation(fields: [specId], references: [id])
+  specId            Int?
+  bodyType          BodyType? @relation(fields: [bodyTypeId], references: [id])
+  bodyTypeId        Int?
+  transmissionType  TransmissionType? @relation(fields: [transmissionTypeId], references: [id])
+  transmissionTypeId Int?
+  fuelType          FuelType? @relation(fields: [fuelTypeId], references: [id])
+  fuelTypeId        Int?
+  location          Location? @relation(fields: [locationId], references: [id])
+  locationId        Int?
+  neighbourhood     Neighbourhood? @relation(fields: [neighbourhoodId], references: [id])
+  neighbourhoodId   Int?
+  interiorColor     Color?    @relation("interiorColor", fields: [interiorColorId], references: [id])
+  interiorColorId   Int?
+  exteriorColor     Color?    @relation("exteriorColor", fields: [exteriorColorId], references: [id])
+  exteriorColorId   Int?
+  sellerType        SellerType? @relation(fields: [sellerTypeId], references: [id])
+  sellerTypeId      Int?
+  trim              Trim?     @relation(fields: [trimId], references: [id])
+  trimId            Int?
+  warranty          Warranty? @relation(fields: [warrantyId], references: [id])
+  warrantyId        Int?
+  motorsTrim        MotorsTrim? @relation(fields: [motorsTrimId], references: [id])
+  motorsTrimId      Int?
+
+
+  @@index([makeId])
+  @@index([modelId])
   @@index([year])
   @@index([mileage])
   @@index([price])
-  @@index([bodyType])
-  @@index([transmissionType])
-  @@index([fuelType])
-  @@index([location])
+  @@index([bodyTypeId])
+  @@index([transmissionTypeId])
+  @@index([fuelTypeId])
+  @@index([locationId])
 }
+
+model Make {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Model {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Spec {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model BodyType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model TransmissionType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model FuelType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Location {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Neighbourhood {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Color {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  interiorCars Car[] @relation("interiorColor")
+  exteriorCars Car[] @relation("exteriorColor")
+}
+
+model SellerType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Trim {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model Warranty {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
+model MotorsTrim {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  cars Car[]
+}
+
 
 model CarCache {
   id           Int      @id @default(autoincrement())

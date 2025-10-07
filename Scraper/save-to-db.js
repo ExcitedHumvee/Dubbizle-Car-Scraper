@@ -59,6 +59,34 @@ async function main() {
           createdAt: carInfo.createdAt ? new Date(carInfo.createdAt) : null,
           added: carInfo.added ? new Date(carInfo.added) : null,
         };
+        
+        const relationalPayload = {};
+        const fieldsToNormalize = [
+            'make', 'model', 'spec', 'bodyType', 'transmissionType', 'fuelType', 'location', 'neighbourhood', 'sellerType', 'trim', 'warranty', 'motorsTrim'
+        ];
+        const colorFields = ['interiorColor', 'exteriorColor'];
+
+        for (const field of fieldsToNormalize) {
+            if (carInfo[field]) {
+                relationalPayload[field] = {
+                    connectOrCreate: {
+                        where: { name: carInfo[field] },
+                        create: { name: carInfo[field] },
+                    },
+                };
+            }
+        }
+        for (const field of colorFields) {
+            if (carInfo[field]) {
+                relationalPayload[field] = {
+                    connectOrCreate: {
+                        where: { name: carInfo[field] },
+                        create: { name: carInfo[field] },
+                    },
+                };
+            }
+        }
+
 
         if (existingCar) {
           // Car exists, check for updates
@@ -69,12 +97,9 @@ async function main() {
             const incomingValue = carPayload[key];
             const existingValue = existingCar[key];
 
-            // Only include if incoming value is not null or undefined
             if (incomingValue !== null && incomingValue !== undefined) {
-              // If existing value is null/undefined OR incoming value is different, then it's a change
               if (existingValue === null || existingValue === undefined || incomingValue !== existingValue) {
                 dataToUpdate[key] = incomingValue;
-                // Special handling for Date objects to compare their string representation
                 if (incomingValue instanceof Date && existingValue instanceof Date) {
                   if (incomingValue.toISOString() !== existingValue.toISOString()) {
                     hasChanges = true;
@@ -86,12 +111,10 @@ async function main() {
             }
           }
 
-          // Ensure listingId is not updated as it's the primary key
           delete dataToUpdate.listingId;
 
           if (Object.keys(dataToUpdate).length > 0 && hasChanges) {
             dataToUpdate.last_updated = fileTimestamp;
-            // Check if price or mileage specifically changed for history
             const priceChanged = dataToUpdate.price !== undefined && existingCar.price !== dataToUpdate.price;
             const mileageChanged = dataToUpdate.mileage !== undefined && existingCar.mileage !== dataToUpdate.mileage;
 
@@ -108,7 +131,7 @@ async function main() {
 
             await prisma.car.update({
               where: { listingId },
-              data: dataToUpdate,
+              data: {...dataToUpdate, ...relationalPayload},
             });
             updatedCars++;
           } else {
@@ -119,6 +142,7 @@ async function main() {
           await prisma.car.create({
             data: {
               ...carPayload,
+              ...relationalPayload,
               last_updated: fileTimestamp,
               features: {
                 create: [
