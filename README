@@ -11,5 +11,6 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    reorg project structure: get rid of backend folder, everything in backend folder should be moved one folder up (project root)
+    Car_details db has to be updated: engineCapacity, doors, horsepower, seatingCapacity is not correct, refer the schema. what do u suggest we do? another db migration?
+    Fix migrations when there is no dev.db maybe need to chnage save-to-db.js
     need to scrape from multiple links

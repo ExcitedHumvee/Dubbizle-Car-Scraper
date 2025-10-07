@@ -96,4 +96,33 @@ FROM
 ORDER BY
     size_mb DESC;
 
+-- Step 1: Delete from tables with foreign keys to the 'Car' table
+DELETE FROM CarFeature;
+DELETE FROM CarHistory;
+
+-- Step 2: Delete from the main 'Car' table
+DELETE FROM Car;
+
+-- Step 3: Delete from all the lookup/dimension tables
+DELETE FROM Make;
+DELETE FROM Model;
+DELETE FROM Spec;
+DELETE FROM BodyType;
+DELETE FROM TransmissionType;
+DELETE FROM FuelType;
+DELETE FROM Location;
+DELETE FROM Neighbourhood;
+DELETE FROM Color;
+DELETE FROM SellerType;
+DELETE FROM Trim;
+DELETE FROM Warranty;
+DELETE FROM MotorsTrim;
+DELETE FROM EngineCapacity;
+DELETE FROM Horsepower;
+DELETE FROM Doors;
+DELETE FROM SeatingCapacity;
+
+-- Step 4: Delete from remaining utility tables
+DELETE FROM CarCache;
+
 
