@@ -147,22 +147,36 @@ async function main() {
           // Handle new normalized fields update/creation/disconnection for existing car
           const newNormalizedUpdateData = {};
           for (const field of normalizedFields) {
-              if (newNormalizedFields[field]) { // If incoming data has this field
-                  if (existingCar[field]) { // If existing car has this field
-                      newNormalizedUpdateData[field] = {
-                          update: { value: carInfoForPayload[field] },
-                      };
+              const incomingNormalizedValue = carInfoForPayload[field]; // Raw value from incoming data
+              const existingNormalizedObject = existingCar[field]; // Object from DB: { id: X, value: Y }
+
+              if (incomingNormalizedValue) { // If incoming data has this field
+                  if (existingNormalizedObject) { // If existing car has this field
+                      if (existingNormalizedObject.value !== incomingNormalizedValue) {
+                          newNormalizedUpdateData[field] = {
+                              connectOrCreate: {
+                                  where: { value: incomingNormalizedValue },
+                                  create: { value: incomingNormalizedValue },
+                              },
+                          };
+                          hasChanges = true;
+                      }
                   } else { // If existing car does not have this field
                       newNormalizedUpdateData[field] = {
-                          create: { value: carInfoForPayload[field] },
+                          connectOrCreate: {
+                              where: { value: incomingNormalizedValue },
+                              create: { value: incomingNormalizedValue },
+                          },
                       };
+                      hasChanges = true;
                   }
-              } else if (existingCar[field]) { // If incoming data doesn't have it, but existing car does
+              } else if (existingNormalizedObject) { // If incoming data doesn't have it, but existing car does
                   newNormalizedUpdateData[field] = { disconnect: true };
+                  hasChanges = true;
               }
           }
 
-          if (Object.keys(dataToUpdate).length > 0 || Object.keys(newNormalizedUpdateData).length > 0) {
+          if (Object.keys(dataToUpdate).length > 0 || hasChanges) {
             dataToUpdate.last_updated = fileTimestamp;
             const priceChanged = dataToUpdate.price !== undefined && existingCar.price !== dataToUpdate.price;
             const mileageChanged = dataToUpdate.mileage !== undefined && existingCar.mileage !== dataToUpdate.mileage;
