@@ -4,10 +4,14 @@ const fs = require('fs'); // File System module for writing files
 const path = require('path'); // Path module for creating file paths 
 
 // Configuration
-// const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc'; // dsc means newest first
-const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/'; // asc means lowest price first
+// The scraper will iterate through each of these base URLs sequentially.
+const BASE_URLS = [
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc',
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc',
+    'https://dubai.dubizzle.com/motors/used-cars/'
+];
 const FIRST_PAGE = 1;
-const LAST_PAGE = 400; // do not go greater than 400
+const LAST_PAGE = 3; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
 const CONCURRENT_PAGES = 1; // increasing this may lead to to more errors, __NEST_DATA__ wont load properly for many pages
 const TIMEOUT = 10; // seconds
@@ -40,8 +44,11 @@ if (!fs.existsSync(processedDir)) {
     fs.mkdirSync(processedDir, { recursive: true });
 }
 
-async function scrapePage(browser, pageNum) {
-    const url = `${BASE_URL}?page=${pageNum}`;
+async function scrapePage(browser, baseUrl, pageNum) {
+    // MODIFIED: Smartly appends the page number to the URL
+    const pageParam = baseUrl.includes('?') ? `&page=${pageNum}` : `?page=${pageNum}`;
+    const url = `${baseUrl}${pageParam}`;
+
     console.log(`Navigating to: ${url}`);
     let page;
     try {
@@ -149,7 +156,7 @@ async function scrapePage(browser, pageNum) {
         });
         return { success: true, cars: carsOnPage };
     } catch (error) {
-        console.error(`An error occurred on page ${pageNum}:`, error.message);
+        console.error(`An error occurred on page ${pageNum} for URL ${url}:`, error.message);
         const timestamp = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
         const errorFileName = `${timestamp}_error_page_${pageNum}`;
 
@@ -191,22 +198,29 @@ async function scrapeCars() {
     let unsuccessfulPages = 0;
     const unsuccessfulPageUrls = [];
 
-    for (let i = FIRST_PAGE; i <= LAST_PAGE; i += CONCURRENT_PAGES) {
-        const promises = [];
-        for (let j = 0; j < CONCURRENT_PAGES && i + j <= LAST_PAGE; j++) {
-            promises.push(scrapePage(browser, i + j));
-        }
-        const results = await Promise.all(promises);
-        results.forEach(result => {
-            if (result.success) {
-                allCars.push(...result.cars);
-                successfulPages++;
-            } else {
-                unsuccessfulPages++;
-                unsuccessfulPageUrls.push(result.url);
+    // MODIFIED: Outer loop to iterate over each base URL
+    for (const baseUrl of BASE_URLS) {
+        console.log(`\n--- Starting scrape for base URL: ${baseUrl} ---\n`);
+
+        for (let i = FIRST_PAGE; i <= LAST_PAGE; i += CONCURRENT_PAGES) {
+            const promises = [];
+            for (let j = 0; j < CONCURRENT_PAGES && i + j <= LAST_PAGE; j++) {
+                // MODIFIED: Pass the current `baseUrl` to the scrapePage function
+                promises.push(scrapePage(browser, baseUrl, i + j));
             }
-        });
+            const results = await Promise.all(promises);
+            results.forEach(result => {
+                if (result.success) {
+                    allCars.push(...result.cars);
+                    successfulPages++;
+                } else {
+                    unsuccessfulPages++;
+                    unsuccessfulPageUrls.push(result.url);
+                }
+            });
+        }
     }
+
 
     await browser.close();
     console.log('--- Browser closed ---');
@@ -218,7 +232,7 @@ async function scrapeCars() {
 
     fs.writeFileSync(outputFilePath, JSON.stringify(allCars, null, 2));
 
-    console.log('--- Scraping Summary ---');
+    console.log('\n--- Scraping Summary ---');
     console.log(`Total cars scraped: ${allCars.length}`);
     console.log(`Successful pages: ${successfulPages}`);
     console.log(`Unsuccessful pages: ${unsuccessfulPages}`);
