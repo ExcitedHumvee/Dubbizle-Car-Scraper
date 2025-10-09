@@ -75,12 +75,12 @@ async function main() {
               if (existingValue === null || existingValue === undefined || incomingValue !== existingValue) {
                 dataToUpdate[key] = incomingValue;
                 // Special handling for Date objects to compare their string representation
-                if (incomingValue instanceof Date && existingValue instanceof Date) {
-                  if (incomingValue.toISOString() !== existingValue.toISOString()) {
-                    hasChanges = true;
-                  }
-                } else if (incomingValue !== existingValue) {
+              if (incomingValue instanceof Date && existingValue instanceof Date) {
+                if (incomingValue.toISOString() !== existingValue.toISOString()) {
                   hasChanges = true;
+                }
+              } else if (incomingValue !== existingValue) {
+                hasChanges = true;
                 }
               }
             }
@@ -120,27 +120,25 @@ async function main() {
             data: {
               ...carPayload,
               last_updated: fileTimestamp,
-              features: {
-                create: [
-                  ...(badges || []).map(b => ({ feature_type: 'badge', feature_name: b })),
-                  ...(extras || []).map(e => ({ feature_type: 'extra', feature_name: e })),
-                  ...(technicalFeatures || []).map(t => ({ feature_type: 'technical', feature_name: t }))
-                ]
-              },
+              // --- MODIFICATION START ---
+              // The 'features' relation has been removed as per the new schema.
+              // The related CarFeature records for badges, extras, and technicalFeatures
+              // will no longer be created.
+              // --- MODIFICATION END ---
               history: {
                 create: {
-                    price: carPayload.price,
-                    mileage: carPayload.mileage,
-                    changed_at: fileTimestamp,
+                  price: carPayload.price,
+                  mileage: carPayload.mileage,
+                  changed_at: fileTimestamp,
                 }
               }
             },
           });
           newCars++;
         }
-        
+
         if (processedCount % 500 === 0) {
-            console.log(`  ... processed ${processedCount} of ${totalCars} cars. Remaining: ${totalCars - processedCount}`);
+          console.log(`  ... processed ${processedCount} of ${totalCars} cars. Remaining: ${totalCars - processedCount}`);
         }
       }
 
@@ -151,13 +149,14 @@ async function main() {
       console.log(`Finished processing ${file}:`);
       console.log(`  - Added: ${newCars} new cars`);
       console.log(`  - Updated: ${updatedCars} existing cars`);
-      console.log(`  - Already present in DB: ${alreadyPresentCars} existing cars`);
+      console.log(`  - No changes: ${alreadyPresentCars} cars`);
     }
 
     // Refresh CarCache at the end of the script
+    console.log('\nRefreshing CarCache...');
     const allCars = await prisma.car.findMany();
     await prisma.carCache.upsert({
-      where: { id: 1 }, // Assuming a single cache entry
+      where: { id: 1 }, // Assuming a single cache entry with id 1
       update: { data: JSON.stringify(allCars) },
       create: { data: JSON.stringify(allCars) },
     });

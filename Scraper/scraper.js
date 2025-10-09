@@ -11,7 +11,7 @@ const BASE_URLS = [
     'https://dubai.dubizzle.com/motors/used-cars/'
 ];
 const FIRST_PAGE = 1;
-const LAST_PAGE = 3; // do not go greater than 400
+const LAST_PAGE = 400; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
 const CONCURRENT_PAGES = 1; // increasing this may lead to to more errors, __NEST_DATA__ wont load properly for many pages
 const TIMEOUT = 10; // seconds

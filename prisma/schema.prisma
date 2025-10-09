@@ -42,7 +42,6 @@ model Car {
   added             DateTime?
   last_updated      DateTime
   history           CarHistory[]
-  features          CarFeature[]
 
   @@index([make])
   @@index([model])
@@ -68,12 +67,4 @@ model CarHistory {
   price       Int?
   mileage     Int?
   changed_at  DateTime
-}
-
-model CarFeature {
-  feature_id   Int    @id @default(autoincrement())
-  car          Car    @relation(fields: [listingId], references: [listingId])
-  listingId    String
-  feature_type String // 'badge', 'extra', or 'technical'
-  feature_name String
 }
