@@ -5,7 +5,7 @@ const path = require('path'); // Path module for creating file paths
 
 // Configuration
 // const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc'; // dsc means newest first
-const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc'; // asc means lowest price first
+const BASE_URL = 'https://dubai.dubizzle.com/motors/used-cars/'; // asc means lowest price first
 const FIRST_PAGE = 1;
 const LAST_PAGE = 400; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
@@ -41,7 +41,7 @@ if (!fs.existsSync(processedDir)) {
 }
 
 async function scrapePage(browser, pageNum) {
-    const url = `${BASE_URL}&page=${pageNum}`;
+    const url = `${BASE_URL}?page=${pageNum}`;
     console.log(`Navigating to: ${url}`);
     let page;
     try {
