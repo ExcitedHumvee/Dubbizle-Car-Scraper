@@ -8,6 +8,7 @@ const path = require('path'); // Path module for creating file paths
 const BASE_URLS = [
     'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc',
     'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc',
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=asc',
     'https://dubai.dubizzle.com/motors/used-cars/'
 ];
 const FIRST_PAGE = 1;
