@@ -59,7 +59,8 @@
                     <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Max Mileage</button><ul id="max-mileage-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
                     <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Min Price</button><ul id="min-price-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
                     <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Max Price</button><ul id="max-price-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
-                </div>
+					<div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Min Post Date</button><ul id="min-date-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
+				</div>
             </div>
         </div>
 
@@ -127,7 +128,8 @@
             // --- STATE MANAGEMENT ---
             const filters = {
                 makes: new Set(), models: new Set(), bodyTypes: new Set(), specs: new Set(),
-                year: null, price: { min: null, max: null }, mileage: { max: null }
+                year: null, price: { min: null, max: null }, mileage: { max: null },
+                minDate: null
             };
             let tableData = [];
 			let currentViewData = [];
@@ -145,6 +147,7 @@
             const maxPriceDropdown = document.getElementById('max-price-dropdown');
             const visualsContainer = document.getElementById('visuals-container');
             const promptContainer = document.getElementById('prompt-container');
+			const minDateDropdown = document.getElementById('min-date-dropdown');
 
 			// --- UI theme config ---
 			// Default color used when a mapping isn't provided
@@ -159,7 +162,8 @@
 				'year-dropdown': 'info',
 				'max-mileage-dropdown': 'secondary',
 				'min-price-dropdown': 'dark',
-				'max-price-dropdown': 'dark'
+				'max-price-dropdown': 'dark',
+				'min-date-dropdown': 'info'
 			};
 
 			// Simple hex swatch map to make the colors obvious on the buttons.
@@ -311,6 +315,12 @@
 				if (filters.mileage.max) filteredData = filteredData.filter(item => (item.mileage || 0) <= filters.mileage.max);
 				if (filters.price.min) filteredData = filteredData.filter(item => item.price >= filters.price.min);
 				if (filters.price.max) filteredData = filteredData.filter(item => item.price <= filters.price.max);
+				// Add this block for date filtering
+                if (filters.minDate) {
+                    const now = new Date();
+                    const threshold = now.setDate(now.getDate() - filters.minDate.days);
+                    filteredData = filteredData.filter(item => item.createdAt && Number(item.createdAt) >= threshold);
+                }
 
 				// Log stats of the filtered results
 				logFilteredStats(filteredData);
@@ -536,7 +546,8 @@
 				if (filters.mileage.max) addBadge(`Max Mileage: ${filters.mileage.max.toLocaleString()}`, () => { filters.mileage.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-mileage-dropdown']);
 				if (filters.price.min) addBadge(`Min Price: ${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }, FILTER_COLOR_MAP['min-price-dropdown']);
 				if (filters.price.max) addBadge(`Max Price: ${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-price-dropdown']);
-                
+                if (filters.minDate) addBadge(`Min Date: ${filters.minDate.label}`, () => { filters.minDate = null; applyFilters(); }, FILTER_COLOR_MAP['min-date-dropdown']);
+
                 // If, after all checks, no specific filters are applied, show the placeholder text.
                 if (!hasFilters) {
                     badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>';
@@ -900,6 +911,20 @@
                 mileageOptions.forEach(mileage=>{const h=`<li><a class="dropdown-item" href="#" data-value="${mileage}">${mileage.toLocaleString()} km</a></li>`;maxMileageDropdown.innerHTML+=h});
             };
 
+			const populateMinDateFilter = () => {
+                minDateDropdown.innerHTML = '';
+                const dateOptions = {
+                    '1 day': 1, '2 days': 2, '3 days': 3, '5 days': 5,
+                    '1 week': 7, '2 weeks': 14, '1 month': 30, '2 months': 60,
+                    '3 months': 90, '6 months': 180, '1 year': 365
+                };
+                for (const [label, days] of Object.entries(dateOptions)) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<a class="dropdown-item" href="#" data-days="${days}" data-label="${label}">${label}</a>`;
+                    minDateDropdown.appendChild(li);
+                }
+            };
+
             // --- EVENT LISTENERS ---
 			const setupEventListeners = () => {
 				// Stop dropdowns from closing when clicking inside them
@@ -1010,6 +1035,15 @@
 				maxMileageDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.mileage.max = Number(e.target.getAttribute("data-value")); applyFilters(); } });
 				minPriceDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.price.min = Number(e.target.getAttribute("data-value")); applyFilters(); } });
 				maxPriceDropdown.addEventListener("click", e => { e.preventDefault(); if (e.target.matches("a.dropdown-item")) { filters.price.max = Number(e.target.getAttribute("data-value")); applyFilters(); } });
+				minDateDropdown.addEventListener("click", e => {
+                    e.preventDefault();
+                    if (e.target.matches("a.dropdown-item")) {
+                        const days = Number(e.target.getAttribute("data-days"));
+                        const label = e.target.getAttribute("data-label");
+                        filters.minDate = { days, label };
+                        applyFilters();
+                    }
+                });
 			};
 			
             // --- INITIAL PAGE LOAD ---
@@ -1054,6 +1088,7 @@
             populateYearFilter();
             populateMaxMileageFilter();
             populatePriceFilters();
+			populateMinDateFilter();
             
             setupEventListeners();
             console.log("Event listeners attached.");
