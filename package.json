@@ -29,7 +29,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "prisma": "^5.22.0"
+    "prisma": "^6.17.1"
   },
   "type": "commonjs"
 }

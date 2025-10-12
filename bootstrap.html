@@ -59,7 +59,7 @@
                     <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Max Mileage</button><ul id="max-mileage-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
                     <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Min Price</button><ul id="min-price-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
                     <div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Max Price</button><ul id="max-price-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
-					<div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Min Post Date</button><ul id="min-date-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
+					<div class="dropdown"><button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Last Updated</button><ul id="min-date-dropdown" class="dropdown-menu overflow-auto" style="z-index:1030;max-height:500px;"></ul></div>
 				</div>
             </div>
         </div>
@@ -319,7 +319,7 @@
                 if (filters.minDate) {
                     const now = new Date();
                     const threshold = now.setDate(now.getDate() - filters.minDate.days);
-                    filteredData = filteredData.filter(item => item.createdAt && Number(item.createdAt) >= threshold);
+                    filteredData = filteredData.filter(item => item.last_updated && Number(item.last_updated) >= threshold);
                 }
 
 				// Log stats of the filtered results
@@ -546,8 +546,7 @@
 				if (filters.mileage.max) addBadge(`Max Mileage: ${filters.mileage.max.toLocaleString()}`, () => { filters.mileage.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-mileage-dropdown']);
 				if (filters.price.min) addBadge(`Min Price: ${filters.price.min.toLocaleString()}`, () => { filters.price.min = null; applyFilters(); }, FILTER_COLOR_MAP['min-price-dropdown']);
 				if (filters.price.max) addBadge(`Max Price: ${filters.price.max.toLocaleString()}`, () => { filters.price.max = null; applyFilters(); }, FILTER_COLOR_MAP['max-price-dropdown']);
-                if (filters.minDate) addBadge(`Min Date: ${filters.minDate.label}`, () => { filters.minDate = null; applyFilters(); }, FILTER_COLOR_MAP['min-date-dropdown']);
-
+				if (filters.minDate) addBadge(`Last Updated: ${filters.minDate.label}`, () => { filters.minDate = null; applyFilters(); }, FILTER_COLOR_MAP['min-date-dropdown']);
                 // If, after all checks, no specific filters are applied, show the placeholder text.
                 if (!hasFilters) {
                     badgesContainer.innerHTML = '<span class="text-muted small">No filters applied</span>';
