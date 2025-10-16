@@ -233,14 +233,14 @@ async function scrapeCars() {
 
     fs.writeFileSync(outputFilePath, JSON.stringify(allCars, null, 2));
 
-    console.log('\n--- Scraping Summary ---');
-    console.log(`Total cars scraped: ${allCars.length}`);
-    console.log(`Successful pages: ${successfulPages}`);
-    console.log(`Unsuccessful pages: ${unsuccessfulPages}`);
     if (unsuccessfulPages > 0) {
         console.log('Unsuccessful page URLs:');
         unsuccessfulPageUrls.forEach(url => console.log(`- ${url}`));
     }
+    console.log('\n--- Scraping Summary ---');
+    console.log(`Total cars scraped: ${allCars.length}`);
+    console.log(`Successful pages: ${successfulPages}`);
+    console.log(`Unsuccessful pages: ${unsuccessfulPages}`);
     console.log(`Total run time: ${runTime} seconds`);
     console.log(`Scraped data saved to: ${outputFilePath}`);
 }
