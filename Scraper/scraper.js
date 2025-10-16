@@ -6,10 +6,10 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 // The scraper will iterate through each of these base URLs sequentially.
 const BASE_URLS = [
-    'https://dubai.dubizzle.com/motors/used-cars/',
-    // 'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc',
-    // 'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc',
-    // 'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=asc'
+    // 'https://dubai.dubizzle.com/motors/used-cars/',
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc',
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc',
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=asc'
 ];
 const FIRST_PAGE = 1;
 const LAST_PAGE = 400; // do not go greater than 400
@@ -235,7 +235,7 @@ async function scrapeCars() {
 
     console.log('\n--- Scraping Summary ---');
     console.log(`Total cars scraped: ${allCars.length}`);
-    // console.log(`Successful pages: ${successfulPages}`);
+    console.log(`Successful pages: ${successfulPages}`);
     console.log(`Unsuccessful pages: ${unsuccessfulPages}`);
     if (unsuccessfulPages > 0) {
         console.log('Unsuccessful page URLs:');
