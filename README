@@ -11,4 +11,4 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    during scrape, especially with multiple links, allCars is ending up with a huge list of cars with duplicate listing ids, if the listing id already exists in allCars, no need to add this car to allCars. but i would also still like the total cars scraped count to be the total number of cars found (in addition to allCars count)
+    during scrape, especially with multiple links, allCars is ending up with a huge list of cars with duplicate listing ids, if the listing id already exists in allCars, no need to add this car to allCars. but i would also still like the total cars scraped count to be the total number of cars found (in addition to allCars count). give me the full code, dont get rid of any comments
