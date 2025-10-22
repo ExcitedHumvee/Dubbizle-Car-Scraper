@@ -12,7 +12,7 @@ const BASE_URLS = [
     'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=asc'
 ];
 const FIRST_PAGE = 1;
-const LAST_PAGE = 400; // do not go greater than 400
+const LAST_PAGE = 10; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
 const CONCURRENT_PAGES = 1; // increasing this may lead to to more errors, __NEST_DATA__ wont load properly for many pages
 const TIMEOUT = 10; // seconds
@@ -195,6 +195,8 @@ async function scrapeCars() {
     console.log('--- Launching browser ---');
     const browser = await chromium.launch({ headless: false });
     const allCars = [];
+    const seenListingIds = new Set(); // To track unique listing IDs
+    let totalCarsFound = 0; // To count all listings found, including duplicates
     let successfulPages = 0;
     let unsuccessfulPages = 0;
     const unsuccessfulPageUrls = [];
@@ -212,7 +214,13 @@ async function scrapeCars() {
             const results = await Promise.all(promises);
             results.forEach(result => {
                 if (result.success) {
-                    allCars.push(...result.cars);
+                    totalCarsFound += result.cars.length;
+                    result.cars.forEach(car => {
+                        if (car.listingId && !seenListingIds.has(car.listingId)) {
+                            allCars.push(car);
+                            seenListingIds.add(car.listingId);
+                        }
+                    });
                     successfulPages++;
                 } else {
                     unsuccessfulPages++;
@@ -221,7 +229,6 @@ async function scrapeCars() {
             });
         }
     }
-
 
     await browser.close();
     console.log('--- Browser closed ---');
@@ -238,7 +245,8 @@ async function scrapeCars() {
         unsuccessfulPageUrls.forEach(url => console.log(`- ${url}`));
     }
     console.log('\n--- Scraping Summary ---');
-    console.log(`Total cars scraped: ${allCars.length}`);
+    console.log(`Total car listings found: ${totalCarsFound}`);
+    console.log(`Total unique cars scraped: ${allCars.length}`);
     console.log(`Successful pages: ${successfulPages}`);
     console.log(`Unsuccessful pages: ${unsuccessfulPages}`);
     console.log(`Total run time: ${runTime} seconds`);
