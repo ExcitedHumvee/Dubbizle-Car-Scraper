@@ -9,6 +9,7 @@ SELECT
   c.make,
   c.model,
   c.price,
+  c."year",
   c.mileage,
   c.spec,
   GROUP_CONCAT(ch.price) AS history_price,
