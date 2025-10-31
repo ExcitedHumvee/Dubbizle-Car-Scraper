@@ -11,4 +11,9 @@ cd backend
 keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
 
 TODO:   
-    during scrape, especially with multiple links, allCars is ending up with a huge list of cars with duplicate listing ids, if the listing id already exists in allCars, no need to add this car to allCars. but i would also still like the total cars scraped count to be the total number of cars found (in addition to allCars count). give me the full code, dont get rid of any comments
+    navigate to https://uae.dubizzle.com/motors/used-cars/
+    click on <button class="MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-outlinedSecondary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorSecondary MuiButton-root MuiButton-outlined MuiButton-outlinedSecondary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorSecondary mui-style-wfuo9n" tabindex="0" type="button" data-testid="sort-button" lang="en"><span class="MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium mui-style-1l6c7y9"><div class="MuiBox-root mui-style-zm52d6"><img class="MuiBox-root mui-style-dixl0t" alt="Sort" src="https://static.dubizzle.com/frontend-web/listings/assets/images/sortIcon.svg"></div></span><span class="MuiTypography-root MuiTypography-subtitle2 mui-style-1yez1u0">Sort<span>:</span>&nbsp;</span>Default</button>
+    click on <li class="MuiListItem-root MuiListItem-gutters mui-style-ps76wg" id="sort-option-1" color="secondary" data-testid="sort-option-1"><p class="MuiTypography-root MuiTypography-body1 false mui-style-1o5r9kb">Newest to Oldest</p></li>
+    click on page 2 <a type="button" class="mui-style-s33uyu" title="Page 2" data-testid="page-2" href="/motors/used-cars/?sorting=price_asc&amp;page=2">2 </a>
+    click on page 3 <a type="button" class="mui-style-s33uyu" title="Page 3" data-testid="page-3" href="/motors/used-cars/?sorting=price_asc&amp;page=3">3 </a>
+    print all cars found to console
