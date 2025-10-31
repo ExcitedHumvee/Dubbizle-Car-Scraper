@@ -2,8 +2,14 @@ const { chromium } = require('playwright');
 const cheerio = require('cheerio');
 const fs = require('fs');
 
+/**
+ * Extracts detailed car data using a HYBRID approach for maximum reliability.
+ * It uses the __NEXT_DATA__ for rich details, but falls back to scraping
+ * visible text for essential fields like price and mileage.
+ * @param {import('playwright').Page} page - The Playwright page object.
+ * @returns {Promise<Array<Object>>} - An array of detailed car data objects.
+ */
 async function extractDetailedCarData(page) {
-    // ... (This function remains the same as before, it's already robust)
     console.log('Extracting detailed data from page content...');
     const html = await page.content();
     const $ = cheerio.load(html);
@@ -37,7 +43,7 @@ async function extractDetailedCarData(page) {
             const detailPageUrl = await listingLocator.getAttribute('href');
             if (!detailPageUrl) continue;
 
-            const listingIdMatch = detailPageUrl.match(/---([a-z0-g]+)/);
+            const listingIdMatch = detailPageUrl.match(/---([a-z0-9]+)/);
             const uuid = listingIdMatch ? listingIdMatch[1] : null;
 
             if (!uuid || !listingMap[uuid]) {
@@ -48,18 +54,42 @@ async function extractDetailedCarData(page) {
             const listing = listingMap[uuid];
             const details = listing.details || {};
 
+            // --- FIX: SCRAPE VISIBLE DATA AS THE PRIMARY OR FALLBACK SOURCE ---
+
+            // 1. Scrape visible mileage (most reliable method, from your original script)
+            const mileageText = await listingLocator.locator('[data-testid="listing-kms"]').textContent();
+            const mileage = mileageText ? parseInt(mileageText.trim().replace(/,/g, ''), 10) : null;
+
+            // 2. Scrape visible price (as a fallback)
+            const priceText = await listingLocator.locator('[data-testid="listing-price"]').textContent();
+            // Remove currency and commas, then parse to a number
+            const scrapedPrice = priceText ? parseInt(priceText.replace(/[^0-9]/g, ''), 10) : null;
+
+            // Get other visible text
             const titleParts = await listingLocator.locator('[data-testid^="heading-text-"]').allTextContents();
             const location = await listingLocator.locator('.mui-style-t0mppt').textContent();
 
             carsOnPage.push({
-                listingId: uuid, title: titleParts.join(' ').trim(), price: listing.price?.value?.raw || null,
-                isNegotiable: listing.price?.value?.negotiable || false, make: details['Make']?.en.value || null,
-                model: details['Model']?.en.value || null, year: details['Year']?.en.value || null,
-                mileage: listing.mileage?.value?.raw || null, spec: details['Regional Specs']?.en.value?.replace(' Specs', '') || null,
-                bodyType: details['Body Type']?.en.value || null, engineCapacity: details['Engine Capacity (cc)']?.en.value || null,
-                horsepower: details['Horsepower']?.en.value || null, transmissionType: details['Transmission Type']?.en.value || null,
-                fuelType: details['Fuel Type']?.en.value || null, sellerType: details['Seller type']?.en.value || null,
-                warranty: details['Warranty']?.en.value || null, location: location.trim(), isPremium: listing.is_premium || false,
+                listingId: uuid,
+                title: titleParts.join(' ').trim(),
+                // Use JSON price first, but fall back to the visible scraped price
+                price: listing.price?.value?.raw || scrapedPrice || null,
+                // Use the directly scraped mileage as it's proven to be more reliable
+                mileage: mileage,
+                isNegotiable: listing.price?.value?.negotiable || false,
+                make: details['Make']?.en.value || null,
+                model: details['Model']?.en.value || null,
+                year: details['Year']?.en.value || null,
+                spec: details['Regional Specs']?.en.value?.replace(' Specs', '') || null,
+                bodyType: details['Body Type']?.en.value || null,
+                engineCapacity: details['Engine Capacity (cc)']?.en.value || null,
+                horsepower: details['Horsepower']?.en.value || null,
+                transmissionType: details['Transmission Type']?.en.value || null,
+                fuelType: details['Fuel Type']?.en.value || null,
+                sellerType: details['Seller type']?.en.value || null,
+                warranty: details['Warranty']?.en.value || null,
+                location: location.trim(),
+                isPremium: listing.is_premium || false,
                 createdAt: listing.created_at ? new Date(listing.created_at * 1000).toISOString() : null,
                 detailPageUrl: detailPageUrl ? `https://uae.dubizzle.com${detailPageUrl}` : null,
                 thumbnailUrl: listing.images?.[0]?.url || null,
@@ -99,16 +129,14 @@ async function main() {
         await page.getByRole('listitem').filter({ hasText: 'Newest to Oldest' }).click();
         await page.waitForURL('**/motors/used-cars/?sorting=date_desc**');
 
-        // --- FIX 1: STABILIZATION ---
-        // Wait for the listings to physically appear after sorting. This helps prevent the race condition.
         await page.locator('a[data-testid^="listing-"]').first().waitFor();
-        await page.waitForTimeout(1500); // Extra pause for the website's data to settle.
+        await page.waitForTimeout(1500);
         console.log('Sorting has been applied and page is stable.');
 
         const allCars = [];
         const seenListingIds = new Set();
         let currentPage = 1;
-        const MAX_PAGES = 5;
+        const MAX_PAGES = 10;
 
         while (currentPage <= MAX_PAGES) {
             console.log(`\n--- Scraping Page ${currentPage} ---`);
@@ -125,17 +153,14 @@ async function main() {
             console.log(`Added ${newCarsAdded} new unique cars from this page.`);
             console.log(`Total unique cars so far: ${allCars.length}`);
 
-            // --- FIX 2: PRECISE SELECTOR ---
-            // Use the specific data-testid for the "Next" button.
             const nextButton = page.locator('[data-testid="page-next"]');
 
             if (await nextButton.isVisible()) {
                 console.log('Clicking "Next Page" button...');
                 await nextButton.click();
 
-                // --- STABILIZATION (Repeat after every data reload) ---
                 await page.locator('a[data-testid^="listing-"]').first().waitFor();
-                await page.waitForTimeout(1500); // Pause to let the next page settle.
+                await page.waitForTimeout(1500);
                 currentPage++;
             } else {
                 console.log('No "Next Page" button visible. Reached the last page.');
