@@ -6,9 +6,9 @@ const path = require('path'); // Path module for creating file paths
 // Configuration
 // The scraper will iterate through each of these base URLs sequentially.
 const BASE_URLS = [
-    // 'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc',
-    // 'https://dubai.dubizzle.com/motors/used-cars/',
-    'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc',
+    'https://dubai.dubizzle.com/motors/used-cars/?sorting=date_desc',
+    'https://dubai.dubizzle.com/motors/used-cars/',
+    // 'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=desc',
     // 'https://dubai.dubizzle.com/motors/used-cars/?sorting_price=asc'
 ];
 const FIRST_PAGE = 1;
