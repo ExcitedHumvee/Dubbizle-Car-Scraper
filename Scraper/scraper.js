@@ -7,12 +7,12 @@ const path = require('path'); // Path module for creating file paths
 // The scraper will iterate through each of these base URLs sequentially.
 const BASE_URLS = [
     'https://uae.dubizzle.com/motors/used-cars/?sorting=date_desc',
-    'https://uae.dubizzle.com/motors/used-cars/',
-    'https://uae.dubizzle.com/motors/used-cars/?sorting_price=desc',
-    'https://uae.dubizzle.com/motors/used-cars/?sorting_price=asc'
+    // 'https://uae.dubizzle.com/motors/used-cars/',
+    // 'https://uae.dubizzle.com/motors/used-cars/?sorting_price=desc',
+    // 'https://uae.dubizzle.com/motors/used-cars/?sorting_price=asc'
 ];
 const FIRST_PAGE = 1;
-const LAST_PAGE = 400; // do not go greater than 400
+const LAST_PAGE = 4; // do not go greater than 400
 const SAVE_HTML_PAGES = false;
 const CONCURRENT_PAGES = 1; // increasing this may lead to to more errors, __NEST_DATA__ wont load properly for many pages
 const TIMEOUT = 10; // seconds
