@@ -62,6 +62,14 @@ async function main() {
 
         if (existingCar) {
           // Car exists, check for updates
+
+          // First, check if the data from this file is newer than the data in the DB.
+          // If the file's timestamp is older or the same, skip this record entirely.
+          if (fileTimestamp <= existingCar.last_updated) {
+            alreadyPresentCars++;
+            continue; // Move to the next car in the file
+          }
+          
           const dataToUpdate = {};
           let hasChanges = false;
 
