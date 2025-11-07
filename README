@@ -17,5 +17,5 @@ TODO:
     click on page 2 <a type="button" class="mui-style-s33uyu" title="Page 2" data-testid="page-2" href="/motors/used-cars/?sorting=price_asc&amp;page=2">2 </a>
     click on page 3 <a type="button" class="mui-style-s33uyu" title="Page 3" data-testid="page-3" href="/motors/used-cars/?sorting=price_asc&amp;page=3">3 </a>
     print all cars found to console
-    need to reduce DB size: best way is to stop storing CarCache in DB
+    pls modify bootstrap.html and update-index-html-with-new-cars.js; the file index.html is quite large, i want u to compress tha cars data and do decompression at client level; please continue to putting the cars compressed data in index.html but in compressed format
     
