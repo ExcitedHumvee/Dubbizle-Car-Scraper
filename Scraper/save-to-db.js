@@ -160,16 +160,6 @@ async function main() {
       console.log(`  - No changes: ${alreadyPresentCars} cars`);
     }
 
-    // Refresh CarCache at the end of the script
-    console.log('\nRefreshing CarCache...');
-    const allCars = await prisma.car.findMany();
-    await prisma.carCache.upsert({
-      where: { id: 1 }, // Assuming a single cache entry with id 1
-      update: { data: JSON.stringify(allCars) },
-      create: { data: JSON.stringify(allCars) },
-    });
-    console.log('CarCache refreshed successfully.');
-
   } catch (error) {
     console.error('An error occurred:', error);
   } finally {

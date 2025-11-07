@@ -16,5 +16,5 @@
 
 
 *.png
-prisma/prisma/*.db
+# prisma/prisma/*.db
 .DS_Store
