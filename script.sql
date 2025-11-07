@@ -97,6 +97,8 @@ FROM
 ORDER BY
     size_mb DESC;
 
+select count(*) from Car c ;
+select count(*) from CarHistory ch ;
 
 
 
