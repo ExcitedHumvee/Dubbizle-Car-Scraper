@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live JSON Compression & Decompression</title>
+    <!-- 1. Include the pako library from a CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 20px; color: #333; max-width: 800px; margin: auto; }
+        h1, h2 { color: #111; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { font-size: 1.3em; margin-top: 40px; }
+        pre { background-color: #f6f8fa; border: 1px solid #ddd; padding: 15px; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; line-height: 1.4; }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #d9534f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Live Pako Demo: Compressing and Uncompressing JSON</h1>
+    <p>This page demonstrates a working compression/decompression cycle. Instead of using a static compressed array, we are now generating it live and then immediately decompressing it to prove the process works.</p>
+
+    <h2>1. The Original Uncompressed JSON Object</h2>
+    <pre id="original-json"></pre>
+
+    <h2>2. Dynamically Compressed Data (as a Uint8Array)</h2>
+    <pre id="compressed-output">Compressing...</pre>
+
+    <h2>3. Final Uncompressed and Verified JSON</h2>
+    <pre id="uncompressed-output">Decompressing...</pre>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("--- Starting Live Compression/Decompression Demo ---");
+
+            // Define the original, uncompressed JSON object here
+            const originalJson = {
+              "id": "user123",
+              "name": "John Doe",
+              "email": "john.doe@example.com",
+              "isAdmin": false,
+              "roles": ["editor", "viewer"],
+              "preferences": {
+                "theme": "dark",
+                "notifications": {
+                  "email": true,
+                  "sms": false
+                }
+              },
+              "last_login": "2025-11-08T18:30:00Z",
+              "status": "active"
+            };
+
+            // Display the original JSON
+            const originalElement = document.getElementById('original-json');
+            originalElement.textContent = JSON.stringify(originalJson, null, 2);
+
+            const compressedElement = document.getElementById('compressed-output');
+            const uncompressedElement = document.getElementById('uncompressed-output');
+
+            try {
+                // --- COMPRESSION STAGE ---
+                console.log("\n--- STAGE 1: COMPRESSION ---");
+                const jsonString = JSON.stringify(originalJson);
+                console.log("JSON object stringified. Length:", jsonString.length);
+
+                const compressedData = pako.deflate(jsonString); // Using deflate
+                console.log("pako.deflate() successful. Output type:", typeof compressedData);
+                console.log("Compressed data (Uint8Array):", compressedData);
+                compressedElement.textContent = `Compression successful!\n\nGenerated Uint8Array: [${compressedData.join(', ')}]`;
+                compressedElement.classList.add('success');
+
+
+                // --- DECOMPRESSION STAGE ---
+                console.log("\n--- STAGE 2: DECOMPRESSION ---");
+                console.log("Feeding the dynamically generated compressed data into pako.inflate().");
+
+                const decompressedString = pako.inflate(compressedData, { to: 'string' }); // Using inflate
+                console.log("pako.inflate() successful.");
+                console.log("Decompressed string length:", decompressedString.length);
+
+                const finalJsonObject = JSON.parse(decompressedString);
+                console.log("Successfully parsed decompressed string back to an object.");
+
+                uncompressedElement.textContent = JSON.stringify(finalJsonObject, null, 2);
+                uncompressedElement.classList.add('success');
+                console.log("\n--- DEMO COMPLETE: SUCCESS ---");
+
+
+            } catch (error) {
+                console.error("--- AN ERROR OCCURRED ---", error);
+                uncompressedElement.textContent = "An error occurred during the live cycle: " + error.message;
+                uncompressedElement.classList.add('error');
+            }
+        });
+    </script>
+
+</body>
+</html>
