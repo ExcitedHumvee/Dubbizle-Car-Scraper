@@ -23,7 +23,7 @@
     <h2>1. The Original Uncompressed JSON Object</h2>
     <pre id="original-json"></pre>
 
-    <h2>2. Dynamically Compressed Data (as a Uint8Array)</h2>
+    <h2>2. Dynamically Compressed Data</h2>
     <pre id="compressed-output">Compressing...</pre>
 
     <h2>3. Final Uncompressed and Verified JSON</h2>
@@ -62,12 +62,18 @@
                 // --- COMPRESSION STAGE ---
                 console.log("\n--- STAGE 1: COMPRESSION ---");
                 const jsonString = JSON.stringify(originalJson);
-                console.log("JSON object stringified. Length:", jsonString.length);
+                const originalLength = jsonString.length;
+                console.log("JSON object stringified. Original Length:", originalLength, "bytes");
 
                 const compressedData = pako.deflate(jsonString); // Using deflate
-                console.log("pako.deflate() successful. Output type:", typeof compressedData);
-                console.log("Compressed data (Uint8Array):", compressedData);
-                compressedElement.textContent = `Compression successful!\n\nGenerated Uint8Array: [${compressedData.join(', ')}]`;
+                const compressedLength = compressedData.length;
+                console.log("pako.deflate() successful. Compressed Length:", compressedLength, "bytes");
+
+                // **MODIFIED PART**: Display lengths on the page
+                compressedElement.textContent = `Compression successful!\n\n` +
+                                                `Original Length:   ${originalLength} bytes\n` +
+                                                `Compressed Length: ${compressedLength} bytes\n\n` +
+                                                `Generated Uint8Array: [${compressedData.join(', ')}]`;
                 compressedElement.classList.add('success');
 
 
