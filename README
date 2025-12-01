@@ -18,4 +18,4 @@ TODO:
     click on page 3 <a type="button" class="mui-style-s33uyu" title="Page 3" data-testid="page-3" href="/motors/used-cars/?sorting=price_asc&amp;page=3">3 </a>
     print all cars found to console
     pls modify bootstrap.html and update-index-html-with-new-cars.js; the file index.html is quite large, i want u to compress tha cars data and do decompression at client level; please continue to putting the cars compressed data in index.html but in compressed format
-    
+    export-cars-from-db.js has been modified to just export last 80000 recently updated cars because index.html was tooo large

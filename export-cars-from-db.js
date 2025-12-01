@@ -7,8 +7,13 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 async function exportAllCars() {
     try {
-        console.log('Fetching all cars from the database...');
-        const cars = await prisma.car.findMany();
+        console.log('Fetching last 80,000 recently updated cars from the database...');
+        const cars = await prisma.car.findMany({
+            orderBy: {
+                last_updated: 'desc'
+            },
+            take: 60000
+        });
 
         // Normalize values: Date -> epoch ms, boolean -> 1/0, recursively for arrays/objects
         function normalizeValue(val) {
@@ -32,7 +37,7 @@ async function exportAllCars() {
 
         const outPath = path.join(__dirname, 'all-cars-from-db.json');
         fs.writeFileSync(outPath, JSON.stringify(out, null, 2), 'utf8');
-        console.log(`Wrote ${normalized.length} cars to ${outPath}`);
+        console.log(`Wrote ${normalized.length} cars (last 80,000 recently updated) to ${outPath}`);
     } catch (err) {
         console.error('Failed to export cars:', err);
         process.exitCode = 1;
