@@ -7,12 +7,12 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 async function exportAllCars() {
     try {
-        console.log('Fetching last 80,000 recently updated cars from the database...');
+        console.log('Fetching last 70,000 recently updated cars from the database...');
         const cars = await prisma.car.findMany({
             orderBy: {
                 last_updated: 'desc'
             },
-            take: 60000
+            take: 70000
         });
 
         // Normalize values: Date -> epoch ms, boolean -> 1/0, recursively for arrays/objects
