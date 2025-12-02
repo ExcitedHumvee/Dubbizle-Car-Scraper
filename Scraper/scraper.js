@@ -8,8 +8,8 @@ const path = require('path'); // Path module for creating file paths
 const BASE_URLS = [
     'https://uae.dubizzle.com/motors/used-cars/?sorting=date_desc',
     'https://uae.dubizzle.com/motors/used-cars/',
-    'https://uae.dubizzle.com/motors/used-cars/?sorting_price=desc',
-    'https://uae.dubizzle.com/motors/used-cars/?sorting_price=asc'
+    // 'https://uae.dubizzle.com/motors/used-cars/?sorting_price=desc',
+    // 'https://uae.dubizzle.com/motors/used-cars/?sorting_price=asc'
 ];
 const FIRST_PAGE = 1;
 const LAST_PAGE = 400; // do not go greater than 400
