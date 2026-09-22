@@ -55,7 +55,11 @@ async function main() {
           price: carInfo.price ? parseInt(carInfo.price) : null,
           mileage: carInfo.mileage ? parseInt(carInfo.mileage) : null,
           year: carInfo.year ? parseInt(carInfo.year) : null,
-          cylinders: carInfo.cylinders ? parseInt(carInfo.cylinders) : null,
+          // The Algolia scraper already emits an Int here; older HTML-scrape
+          // files emitted the string "4". Accept both.
+          cylinders: carInfo.cylinders === null || carInfo.cylinders === undefined
+            ? null
+            : (Number.isInteger(carInfo.cylinders) ? carInfo.cylinders : parseInt(carInfo.cylinders, 10) || null),
           createdAt: carInfo.createdAt ? new Date(carInfo.createdAt) : null,
           added: carInfo.added ? new Date(carInfo.added) : null,
         };

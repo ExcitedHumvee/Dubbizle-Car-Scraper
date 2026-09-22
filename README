@@ -1,21 +1,178 @@
+# Dubizzle Car Scraper
+
+Scrapes used-car listings from `https://uae.dubizzle.com/motors/used-cars/`, stores
+them in SQLite via Prisma, and rebuilds the static `index.html` front end.
+
+## Daily use
+
+```bash
+npm run scrape        # scrape -> save to db -> reclaim -> export -> rebuild index.html
+```
+
+Individual steps:
+
+| command | what it does |
+| --- | --- |
+| `npm run scrape` | full pipeline (below) |
+| `npm run scrape:count` | scrape but only report counts, write nothing (`--dry-run`) |
+| `npm run scrape:test` | unit tests + a live Algolia smoke test |
+| `npm run test:scrape` | unit tests only, no network |
+| `npm run scrape:repair -- <file.json>` | fix schema-invalid fields in an existing scrape file |
+| `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB |
+| `npm run export:all` | dump the DB to `all-cars-from-db.json` |
+| `npm run sync:index` | rebuild `index.html` from `bootstrap.html` + the export |
+| `npm run studio` | Prisma Studio |
+
+---
+
+## Why the scraper was rewritten
+
+The previous scraper drove a headless browser to
+`https://uae.dubizzle.com/motors/used-cars/` and parsed
+`#__NEXT_DATA__`. Two things killed it:
+
+1. **Imperva / Incapsula now challenges the requests.** Every request to
+   `uae.dubizzle.com` gets a `200` containing a *"Pardon Our Interruption"* page
+   plus an `_Incapsula_Resource` iframe and an **hCaptcha** challenge, instead of
+   the listing HTML. This is triggered by IP/bot scoring, so it hits headless
+   browsers *and* plain HTTP, and it is not fixable with headers or user agents.
+   You can see it live: `curl https://uae.dubizzle.com/robots.txt` works (that one
+   path is served by `Server: Dubizzle`), while every other path returns the
+   challenge.
+2. **The page no longer carries the data where the old code looked.** The listing
+   page's payload moved: the redux action the scraper read
+   (`listings/fetchListingDataForQuery/fulfilled` → `.payload.hits`) is not always
+   populated the same way, and the scraper's card selectors had drifted
+   (`listing-location` → `.mui-style-t0mppt` is gone). That is why recent scrapes
+   wrote tens of thousands of rows with `price`, `make`, `model`, `mileage`,
+   `spec` all `null`.
+
+### The new approach
+
+**The listing page is only a shell - it fetches its data from Algolia.** The page
+payload ships the credentials it uses:
+
+```
+algolia_app_id:  WD0PTZ13ZS
+algolia_app_key: cdd839b4fdac840289e88633779e8634   (public search-only key)
+algoliaIndexName: motors.com
+```
+
+Algolia is a third-party search service, so querying it directly **does not touch
+Dubizzle's WAF and never shows a captcha**. The new scraper:
+
+- posts to `https://WD0PTZ13ZS-dsn.algolia.net/1/indexes/motors.com/query`
+- filters `category_v2.slug_paths:"motors/used-cars"` (~34.5k live listings)
+- pages 1,000 hits at a time
+- **partitions** the category by make (and by year when needed) because a single
+  Algolia query can only reach the first 10,000 hits
+
+It is also *better data* than before: price, mileage, year and the full spec sheet
+arrive as structured fields rather than parsed DOM, and each listing carries all
+of its photos.
+
+Measured on a full run: **~34,500 cars in ~3 minutes**, with 100% coverage of
+`price`, `mileage`, `year`, `make`, `model`, `detailPageUrl` and `added`.
+
+---
+
+## Options
+
+```bash
+node Scraper/scraper.js --limit 200      # smoke test (stops early)
+node Scraper/scraper.js --out tmp.json   # custom output file
+node Scraper/scraper.js --dry-run        # fetch + validate, write nothing
+node Scraper/scraper.js --quiet          # summary only
+```
+
+Tuning via environment variables (see `Scraper/algolia-config.js`):
+
+| variable | default | meaning |
+| --- | --- | --- |
+| `SCRAPE_CONCURRENCY` | `4` | parallel Algolia requests |
+| `SCRAPE_RETRIES` | `5` | retries per request (exponential backoff) |
+| `SCRAPE_MIN_CARS` | `1000` | abort instead of writing a suspiciously small file |
+| `ALGOLIA_APP_ID` / `ALGOLIA_API_KEY` / `ALGOLIA_INDEX` | see above | credential override |
+
+Output goes to `Scraper/unprocessed/<timestamp>-<count>.json`, which is exactly
+what `npm run db:save` consumes.
+
+## Safety behaviour
+
+The scraper refuses to write output that would poison the database:
+
+- any failed partition → exits non-zero and writes **nothing** (no partial files)
+- fewer than `SCRAPE_MIN_CARS` cars → exits non-zero, writes nothing
+- 401/403 from Algolia → tells you the key rotated instead of writing empty rows
+- **type validation against the Prisma schema** → if any field would not satisfy
+  `prisma.car.create()` (e.g. a spec value arriving as an object), the run exits
+  non-zero and writes nothing, naming the offending fields
+
+That last check exists because an invalid type only surfaces *inside*
+`save-to-db.js`, after thousands of rows have already been inserted, and leaves
+the import half-done. Catching it before the file is written means `npm run
+scrape` either imports cleanly or fails loudly with nothing to clean up.
+
+## Repairing an existing scrape file
+
+If you have a file produced by an older mapper (for example one containing
+`motorsTrim: { id: null, name: null }`, which makes Prisma throw
+`Expected String or Null, provided Object`), you can fix it in place instead of
+re-scraping:
+
+```bash
+node Scraper/repair-scrape.js Scraper/unprocessed/<file>.json --dry-run   # report only
+node Scraper/repair-scrape.js Scraper/unprocessed/<file>.json             # fix in place
+```
+
+It only rewrites fields whose runtime type does not match the schema, so it is
+safe to run repeatedly, and afterwards `npm run db:save` will complete.
+
+## If the key rotates
+
+The key above is the public search key every browser receives, so it is not a
+secret - but Dubizzle can rotate it. Symptom: the scraper exits with
+`Algolia rejected the credentials (403)`.
+
+To refresh it: open <https://uae.dubizzle.com/motors/used-cars/> in a real
+browser, then in DevTools → Network look for a request to `algolia.net` or
+`algolia.dubizzle.com` and copy the `x-algolia-api-key` header (and
+`x-algolia-application-id`). Then either export it:
+
+```bash
+$env:ALGOLIA_API_KEY="..."; npm run scrape
+```
+
+or copy `Scraper/algolia-credentials.example.json` to
+`Scraper/algolia-credentials.json` (git-ignored) and fill it in.
+
+## Files
+
+| file | role |
+| --- | --- |
+| `Scraper/scraper.js` | the scraper (Algolia) |
+| `Scraper/algolia-config.js` | credentials, filter, tuning |
+| `Scraper/algolia-mapper.js` | Algolia hit → DB/export field mapping |
+| `Scraper/save-to-db.js` | import `unprocessed/*.json` → SQLite |
+| `Scraper/repair-scrape.js` | fix schema-invalid fields in an existing scrape file |
+| `Scraper/test.js` | mapper unit tests + live API smoke test |
+| `Scraper/legacy/scraper-html-2025.js` | the old Playwright scraper, kept for reference |
+| `Scraper/diag/` | investigation scripts + archived page snapshots (git-ignored) |
+
+## Data notes
+
+- `added` = when the car was **posted** to Dubizzle.
+- `createdAt` = when the seller's **account** was created.
+- `sellerType` is decoded from the site's codes (`OW` → Owner, `DL` → Dealer,
+  `RL` → Rental, `AG` → Agent, `BR` → Business).
+- `spec` is stored without the trailing " Specs" (`GCC Specs` → `GCC`).
+- List-valued fields (`badges`, `extras`, `technicalFeatures`) are split into one
+  array entry per item, preserving names that contain commas inside parentheses
+  (e.g. `Anti-Lock Brakes (ABS)`).
+
+## Repo shorthand
+
+```
 git add .; git commit -m "up"; git push;
-gemini -m gemini-2.5-flash
-incase u did git commit ammend git push --force-with-lease origin main
-cd backend    
-    npm run scrape
-    npm run test:scrape (wont call dubizzle servers)
-    npx prisma studio
-
-    npm start
-
-keep in mind added is when Car was posted to Dubizzle, createAt is when the user had created thier accont on Dubizzle
-
-TODO:   
-    navigate to https://uae.dubizzle.com/motors/used-cars/
-    click on <button class="MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-outlinedSecondary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorSecondary MuiButton-root MuiButton-outlined MuiButton-outlinedSecondary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorSecondary mui-style-wfuo9n" tabindex="0" type="button" data-testid="sort-button" lang="en"><span class="MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium mui-style-1l6c7y9"><div class="MuiBox-root mui-style-zm52d6"><img class="MuiBox-root mui-style-dixl0t" alt="Sort" src="https://static.dubizzle.com/frontend-web/listings/assets/images/sortIcon.svg"></div></span><span class="MuiTypography-root MuiTypography-subtitle2 mui-style-1yez1u0">Sort<span>:</span>&nbsp;</span>Default</button>
-    click on <li class="MuiListItem-root MuiListItem-gutters mui-style-ps76wg" id="sort-option-1" color="secondary" data-testid="sort-option-1"><p class="MuiTypography-root MuiTypography-body1 false mui-style-1o5r9kb">Newest to Oldest</p></li>
-    click on page 2 <a type="button" class="mui-style-s33uyu" title="Page 2" data-testid="page-2" href="/motors/used-cars/?sorting=price_asc&amp;page=2">2 </a>
-    click on page 3 <a type="button" class="mui-style-s33uyu" title="Page 3" data-testid="page-3" href="/motors/used-cars/?sorting=price_asc&amp;page=3">3 </a>
-    print all cars found to console
-    pls modify bootstrap.html and update-index-html-with-new-cars.js; the file index.html is quite large, i want u to compress tha cars data and do decompression at client level; please continue to putting the cars compressed data in index.html but in compressed format
-    export-cars-from-db.js has been modified to just export last 80000 recently updated cars because index.html was tooo large
+git commit --amend  =>  git push --force-with-lease origin main
+```

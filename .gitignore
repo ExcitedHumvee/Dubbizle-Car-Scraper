@@ -14,6 +14,12 @@
 /Scraper/errors
 /Scraper/html_files
 
+# Local Algolia credential override (public search key, but machine-specific)
+/Scraper/algolia-credentials.json
+
+# Diagnostics scratch space (archived page snapshots, probes)
+/Scraper/diag
+
 
 *.png
 # prisma/prisma/*.db

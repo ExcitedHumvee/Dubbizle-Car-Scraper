@@ -1,0 +1,15 @@
+const fs = require('fs'), cheerio = require('cheerio');
+const html = fs.readFileSync('Scraper/diag/snap-20260821194928.html', 'utf-8');
+const $ = cheerio.load(html);
+const nd = JSON.parse($('body').find('#__NEXT_DATA__').html());
+const hits = nd.props.pageProps.reduxWrapperActionsGIPP.find(a => a.type === 'listings/fetchListingDataForQuery/fulfilled').payload.hits;
+const all = new Set();
+hits.forEach(h => { if (h.details) Object.keys(h.details).forEach(k => all.add(k)); });
+console.log('detail keys across hits:');
+console.log([...all].sort().join('\n'));
+console.log('\n--- details_v2 of hit0 (first 4000) ---');
+console.log(JSON.stringify(hits[0].details_v2, null, 1).slice(0, 4000));
+console.log('\n--- price/added/created_at samples ---');
+hits.slice(0, 5).forEach(h => console.log(JSON.stringify({ uuid: h.uuid, id: h.id, price: h.price, added: h.added, created_at: h.created_at, name: h.name && h.name.en, seller_type: h.seller_type, permalink: h.permalink, absolute_url: h.absolute_url && h.absolute_url.en })));
+console.log('\n--- photos object ---');
+console.log(JSON.stringify(hits[0].photos).slice(0, 600));

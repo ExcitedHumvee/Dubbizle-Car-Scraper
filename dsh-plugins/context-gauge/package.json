@@ -1,0 +1,24 @@
+{
+  "name": "dsh-context-gauge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Context-remaining gauge for the DSH Web GUI session header, read from the token-meter session projections",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-renderer"
+      ]
+    }
+  },
+  "license": "MIT"
+}
