@@ -9,6 +9,8 @@
     "scrape:test": "node scraper/test.js",
     "scrape:repair": "node scraper/repair-scrape.js",
     "test:scrape": "node scraper/test.js --offline",
+    "test:db": "node scraper/test-save-to-db.js",
+    "test:db-diff": "node scraper/diag/differential-save.js",
     "db:save": "node scraper/save-to-db.js && npx prisma db execute --file reclaim-db-space.sql",
     "db:reclaim": "npx prisma db execute --file reclaim-db-space.sql",
     "db:setup": "prisma generate && prisma migrate dev",

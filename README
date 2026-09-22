@@ -17,9 +17,9 @@ Individual steps:
 | `npm run scrape:count` | scrape but only report counts, write nothing (`--dry-run`) |
 | `npm run scrape:test` | unit tests + a live Algolia smoke test |
 | `npm run test:scrape` | unit tests only, no network |
+| `npm run test:db` | save-to-db regression test (throwaway database) |
 | `npm run scrape:repair -- <file.json>` | fix schema-invalid fields in an existing scrape file |
-| `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB |
-| `npm run export:all` | dump every car from the DB to `all-cars-from-db.json` |
+| `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB || `npm run export:all` | dump every car from the DB to `all-cars-from-db.json` |
 | `npm run sync:index` | rebuild `index.html` from `bootstrap.html` + the export |
 | `npm run migrate:template` | convert a `bootstrap.html` that still has inline JSON |
 | `npm run studio` | Prisma Studio |
@@ -129,6 +129,65 @@ node Scraper/repair-scrape.js Scraper/unprocessed/<file>.json             # fix 
 It only rewrites fields whose runtime type does not match the schema, so it is
 safe to run repeatedly, and afterwards `npm run db:save` will complete.
 
+## Importing a scrape into the database
+
+`npm run db:save` (or the equivalent step inside `npm run scrape`) reads every
+`.json` in `Scraper/unprocessed/`, imports it, then moves the file to
+`Scraper/processed/`.
+
+It is batched. The original version issued a `findUnique` and then an
+`insert`/`update` **per car** - about 70,000 round trips for a 34.5k-car scrape,
+which is why the step dominated the pipeline runtime. It now:
+
+1. reads and parses every queued file,
+2. loads the existing rows those files could affect with a few chunked
+   `findMany` calls (not the whole table),
+3. decides insert / update / skip in memory,
+4. bulk-inserts new cars and their history with `createMany`,
+5. applies updates with a single `updateMany` per distinct change-set.
+
+A car whose scraped data is identical to what is stored costs **no SQL at all**,
+so a re-import that finds nothing new does not touch the database.
+
+| 5,000 cars | before | after |
+| --- | --- | --- |
+| fresh insert | ~2 min | **2.8 s** |
+| re-import, no changes | ~2 min | **~1 s** |
+| 25 cars with changed price/mileage | ~2 min | **~4 s** |
+
+That is ~0.55 ms/car inserting, so the full 117k-row table imports in well under
+a minute instead of ~45.
+
+### Behaviour is verified against the old implementation
+
+`Scraper/diag/differential-save.js` runs the **pre-optimization** script (pulled
+from git) and the new one over identical fixture files against separate throwaway
+databases, then diffs every `Car` and `CarHistory` row. Current status: all
+scenarios identical, covering
+
+- newer data wins; prices and mileage update and are recorded in `CarHistory`
+- a brand-new listing appearing later is inserted
+- nulls never overwrite stored values
+- an older (or equally old) file changes nothing
+- `1`/`0` and `"2016"`-style values are coerced to the right column types
+
+Two deliberate differences from the old script, both of which were bugs:
+
+- **Unknown keys in a scraped record are ignored.** The old script spread the
+  whole record into Prisma, so any extra field (e.g. `categorySlugPaths`, `site`)
+  made the import throw `Unknown argument` and abort.
+- **`1`/`0` are accepted for Boolean columns** instead of erroring with
+  `Expected Boolean or Null, provided Int`.
+
+Also note `last_updated` still means **"when this car's data last changed"** - an
+unchanged car keeps its old timestamp rather than being refreshed on every run.
+That matters: `last_updated` currently has only ~141 distinct values across
+117k cars, so bumping unchanged rows would collapse thousands of cars onto one
+timestamp and erase the history.
+
+Files move to `processed/` only after their rows are committed, and re-running is
+safe: rows already at or newer than the file's timestamp are skipped.
+
 ## If the key rotates
 
 The key above is the public search key every browser receives, so it is not a
@@ -154,7 +213,8 @@ or copy `Scraper/algolia-credentials.example.json` to
 | `Scraper/scraper.js` | the scraper (Algolia) |
 | `Scraper/algolia-config.js` | credentials, filter, tuning |
 | `Scraper/algolia-mapper.js` | Algolia hit → DB/export field mapping |
-| `Scraper/save-to-db.js` | import `unprocessed/*.json` → SQLite |
+| `Scraper/save-to-db.js` | import `unprocessed/*.json` → SQLite (batched) |
+| `Scraper/test-save-to-db.js` | regression test for the import (throwaway db) |
 | `Scraper/repair-scrape.js` | fix schema-invalid fields in an existing scrape file |
 | `Scraper/test.js` | mapper unit tests + live API smoke test |
 | `Scraper/car-data-embed.js` | gzip/base64 embed + validation for index.html |
