@@ -17,8 +17,13 @@
 # Local Algolia credential override (public search key, but machine-specific)
 /Scraper/algolia-credentials.json
 
-# NOTE: index.html and all-cars-from-db.json are deliberately NOT ignored - they
-# are the published page / its source data for the GitHub Pages deploy.
+# Generated artifacts that exceed GitHub's 100 MB file limit. Both are rebuilt
+# locally (index.html embeds its own compressed copy of the car data, and dev.db
+# comes from `prisma migrate`), and the GitHub Pages deploy reads neither.
+/all-cars-from-db.json
+/prisma/prisma/*.db
+
+# index.html IS tracked - it is the published page.
 
 # Diagnostics scratch space (archived page snapshots, probes)
 /Scraper/diag
