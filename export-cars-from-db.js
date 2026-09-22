@@ -3,16 +3,20 @@ const path = require('path');
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 
-// write all cars to json file (will be used by front end next step)
+// Write every car to json (used by the front-end build step next).
+//
+// There is deliberately no row cap here. index.html used to be limited to 70,000
+// cars because the data was embedded as raw JSON and hit GitHub Pages' 100 MB
+// file limit. update-index-html-with-new-cars.js now gzip-compresses the payload
+// (~117 MB -> ~21 MB), so the whole table can be exported and published.
 const prisma = new PrismaClient();
 async function exportAllCars() {
     try {
-        console.log('Fetching last 70,000 recently updated cars from the database...');
+        console.log('Fetching all cars from the database...');
         const cars = await prisma.car.findMany({
             orderBy: {
                 last_updated: 'desc'
-            },
-            take: 70000
+            }
         });
 
         // Normalize values: Date -> epoch ms, boolean -> 1/0, recursively for arrays/objects
@@ -36,8 +40,8 @@ async function exportAllCars() {
         const out = { Car: normalized };
 
         const outPath = path.join(__dirname, 'all-cars-from-db.json');
-        fs.writeFileSync(outPath, JSON.stringify(out, null, 2), 'utf8');
-        console.log(`Wrote ${normalized.length} cars (last 80,000 recently updated) to ${outPath}`);
+        fs.writeFileSync(outPath, JSON.stringify(out), 'utf8');
+        console.log(`Wrote ${normalized.length} cars to ${outPath}`);
     } catch (err) {
         console.error('Failed to export cars:', err);
         process.exitCode = 1;

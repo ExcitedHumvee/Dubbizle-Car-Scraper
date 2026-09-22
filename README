@@ -19,8 +19,9 @@ Individual steps:
 | `npm run test:scrape` | unit tests only, no network |
 | `npm run scrape:repair -- <file.json>` | fix schema-invalid fields in an existing scrape file |
 | `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB |
-| `npm run export:all` | dump the DB to `all-cars-from-db.json` |
+| `npm run export:all` | dump every car from the DB to `all-cars-from-db.json` |
 | `npm run sync:index` | rebuild `index.html` from `bootstrap.html` + the export |
+| `npm run migrate:template` | convert a `bootstrap.html` that still has inline JSON |
 | `npm run studio` | Prisma Studio |
 
 ---
@@ -156,7 +157,12 @@ or copy `Scraper/algolia-credentials.example.json` to
 | `Scraper/save-to-db.js` | import `unprocessed/*.json` → SQLite |
 | `Scraper/repair-scrape.js` | fix schema-invalid fields in an existing scrape file |
 | `Scraper/test.js` | mapper unit tests + live API smoke test |
+| `Scraper/car-data-embed.js` | gzip/base64 embed + validation for index.html |
+| `Scraper/migrate-template.js` | convert bootstrap.html to the compressed format |
+| `update-index-html-with-new-cars.js` | build index.html (compress + embed) |
+| `export-cars-from-db.js` | export all cars from the DB |
 | `Scraper/legacy/scraper-html-2025.js` | the old Playwright scraper, kept for reference |
+| `Scraper/legacy/bootstrap-inline-json.html` | pre-compression template, kept for reference |
 | `Scraper/diag/` | investigation scripts + archived page snapshots (git-ignored) |
 
 ## Data notes
@@ -164,11 +170,72 @@ or copy `Scraper/algolia-credentials.example.json` to
 - `added` = when the car was **posted** to Dubizzle.
 - `createdAt` = when the seller's **account** was created.
 - `sellerType` is decoded from the site's codes (`OW` → Owner, `DL` → Dealer,
-  `RL` → Rental, `AG` → Agent, `BR` → Business).
+  `RL` → Rental, `AG` → Agent, `BR` → Business, `DS` → Dealership/Certified Pre-Owned).
 - `spec` is stored without the trailing " Specs" (`GCC Specs` → `GCC`).
 - List-valued fields (`badges`, `extras`, `technicalFeatures`) are split into one
   array entry per item, preserving names that contain commas inside parentheses
   (e.g. `Anti-Lock Brakes (ABS)`).
+
+---
+
+## index.html: why the car data is compressed
+
+`index.html` is a single self-contained file, so the car data has to live inside
+it. As raw JSON the whole database is **~117 MB**, over GitHub Pages' 100 MB
+per-file limit - which is why the export used to be capped at 70,000 cars
+(~88 MB) and why recent listings could be missing from the page.
+
+The data is now **gzip-compressed and base64-encoded** into a
+`<script type="application/octet-stream" id="car-data">` block, and inflated in
+the browser with the built-in `DecompressionStream` API - no library, no extra
+network request:
+
+| | raw JSON | gzip + base64 |
+| --- | --- | --- |
+| all 117,456 cars | 115.6 MB | **20.4 MB** |
+| old 70,000-car cap | 69.7 MB | 12.4 MB |
+
+So the cap is gone: the page now ships **every** car (~20 MB, decoding in well
+under a second) with room to grow to roughly 500k listings before the limit
+matters again.
+
+### How the pieces fit
+
+```
+export-cars-from-db.js            -> all-cars-from-db.json   (every car, no cap)
+update-index-html-with-new-cars.js -> index.html             (compresses + embeds)
+bootstrap.html                     -> the template (no data, ~61 KB)
+```
+
+`bootstrap.html` is the template and holds the loader, not the data. The build
+step injects the compressed payload. Both are validated before writing: the build
+refuses to publish a page that lost dashboard code, has a malformed payload, or
+would be left with an empty dataset.
+
+Run it with:
+
+```bash
+npm run export:all     # dump the DB (all cars)
+npm run sync:index     # compress + rebuild index.html
+```
+
+Requires a browser with `DecompressionStream`: Chrome/Edge 80+, Firefox 113+,
+Safari 16.4+ (released 2023). Older browsers show a clear error instead of an
+empty table.
+
+### If you edit the template
+
+`bootstrap.html` no longer contains inline JSON. If you ever restore a copy that
+does, convert it once with:
+
+```bash
+npm run migrate:template        # adds --dry-run to preview
+```
+
+That rewrites `const jsonData = {...}` into the `loadCarData()` loader, wraps the
+data-dependent initialisation in an async block, and neutralises the template's
+`tableData = jsonData.Car` assignments (which would otherwise overwrite the
+loaded records with the empty placeholder).
 
 ## Repo shorthand
 

@@ -1,113 +1,77 @@
+/**
+ * Rebuild index.html from bootstrap.html + all-cars-from-db.json.
+ *
+ *   node update-index-html-with-new-cars.js
+ *
+ * The car data is embedded gzip-compressed + base64-encoded in a
+ * <script type="application/octet-stream" id="car-data"> block and inflated in
+ * the browser with DecompressionStream (see Scraper/car-data-embed.js).
+ *
+ * That compression is what removes the old 70,000-car cap: as raw JSON the full
+ * dataset is ~117 MB (over GitHub Pages' 100 MB limit), but gzip+base64 is
+ * ~21 MB, so every car in the database can ship.
+ */
+
 const fs = require('fs');
 const path = require('path');
+const embed = require('./Scraper/car-data-embed');
 
-const projectRoot = __dirname;
-const bootstrapPath = path.join(projectRoot, 'bootstrap.html');
-const indexPath = path.join(projectRoot, 'index.html');
-const allCarsPath = path.join(__dirname, 'all-cars-from-db.json');
+const root = __dirname;
+const templatePath = path.join(root, 'bootstrap.html');
+const carsPath = path.join(root, 'all-cars-from-db.json');
+const outputPath = path.join(root, 'index.html');
 
-function findObjectRange(content, startIdx) {
-    // find first '{' after startIdx
-    const firstBrace = content.indexOf('{', startIdx);
-    if (firstBrace === -1) return null;
-
-    let i = firstBrace;
-    let depth = 0;
-    let inString = false;
-    let stringChar = null;
-    let escaped = false;
-
-    for (; i < content.length; i++) {
-        const ch = content[i];
-        if (inString) {
-            if (escaped) {
-                escaped = false;
-            } else if (ch === '\\') {
-                escaped = true;
-            } else if (ch === stringChar) {
-                inString = false;
-                stringChar = null;
-            }
-            continue;
-        }
-
-        if (ch === '"' || ch === "'") {
-            inString = true;
-            stringChar = ch;
-            continue;
-        }
-
-        if (ch === '{') depth++;
-        else if (ch === '}') {
-            depth--;
-            if (depth === 0) {
-                return { start: firstBrace, end: i };
-            }
-        }
-    }
-
-    return null;
+function fail(message, code = 1) {
+  console.error(`ERROR: ${message}`);
+  process.exit(code);
 }
 
 function main() {
-    if (!fs.existsSync(bootstrapPath)) {
-        console.error('bootstrap.html not found at', bootstrapPath);
-        process.exit(1);
-    }
-    if (!fs.existsSync(allCarsPath)) {
-        console.error('all-cars-from-db.json not found at', allCarsPath);
-        process.exit(1);
-    }
+  if (!fs.existsSync(templatePath)) fail(`template not found: ${templatePath}`);
+  if (!fs.existsSync(carsPath)) fail(`car export not found: ${carsPath} (run: npm run export:all)`);
 
-    const bootstrap = fs.readFileSync(bootstrapPath, 'utf8');
-    // Step 1: clear index.html and copy bootstrap.html into it
-    let newIndex = bootstrap;
+  const template = fs.readFileSync(templatePath, 'utf-8');
+  if (template.includes('"listingId"')) {
+    fail('bootstrap.html still contains inline car data.\n' +
+      '       Run: node Scraper/migrate-template.js');
+  }
 
-    // Step 2: locate `const jsonData` in the copied content
-    const jsonMarker = 'const jsonData';
-    const markerIdx = newIndex.indexOf(jsonMarker);
-    if (markerIdx === -1) {
-        console.error('Could not find "const jsonData" marker in bootstrap.html');
-        // still write bootstrap to index so index is updated
-        fs.writeFileSync(indexPath, newIndex, 'utf8');
-        process.exit(1);
-    }
+  console.log('reading', (fs.statSync(carsPath).size / 1048576).toFixed(1), 'MB from', path.basename(carsPath));
+  const raw = fs.readFileSync(carsPath, 'utf-8');
 
-    const objRange = findObjectRange(newIndex, markerIdx);
-    if (!objRange) {
-        console.error('Failed to locate the jsonData object range in bootstrap.html');
-        fs.writeFileSync(indexPath, newIndex, 'utf8');
-        process.exit(1);
-    }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    fail(`all-cars-from-db.json is not valid JSON: ${err.message}`);
+  }
 
-    // Read all-cars-from-db.json and stringify with indentation
-    const allCarsRaw = fs.readFileSync(allCarsPath, 'utf8');
-    let parsed;
-    try {
-        parsed = JSON.parse(allCarsRaw);
-    } catch (e) {
-        console.error('all-cars-from-db.json is not valid JSON:', e.message);
-        process.exit(1);
-    }
+  const cars = parsed.Car || (Array.isArray(parsed) ? parsed : []);
+  if (!Array.isArray(cars)) fail('all-cars-from-db.json has no "Car" array');
+  if (cars.length === 0) fail('all-cars-from-db.json contains 0 cars - refusing to publish an empty page');
+  console.log(`cars to embed: ${cars.length}`);
 
-    const replacement = JSON.stringify(parsed, null, 2);
+  const payload = JSON.stringify({ Car: cars });
+  console.log('raw payload  :', (payload.length / 1048576).toFixed(1), 'MB');
 
-    // Find '=' after 'const jsonData' to know where assignment begins
-    const eqPos = newIndex.indexOf('=', markerIdx);
-    if (eqPos === -1) {
-        console.error('Could not find assignment operator for jsonData');
-        fs.writeFileSync(indexPath, newIndex, 'utf8');
-        process.exit(1);
-    }
+  const t0 = Date.now();
+  const base64 = embed.compressStringToBase64(payload);
+  console.log('gzip+base64  :', (base64.length / 1048576).toFixed(1), 'MB',
+    `(${(100 - (base64.length / payload.length) * 100).toFixed(1)}% smaller, ${((Date.now() - t0) / 1000).toFixed(1)}s)`);
 
-    const replaceStart = eqPos + 1; // start replacing after '='
-    const replaceEnd = objRange.end + 1; // include closing brace
+  const html = embed.setDataBlock(template, base64);
 
-    const composed = newIndex.slice(0, replaceStart) + '\n' + replacement + ';' + newIndex.slice(replaceEnd);
+  // Guard: this must not have touched the dashboard code (see car-data-embed.js
+  // for the regression this protects against).
+  embed.assertEmbeddable(html, { minBytes: 20000 });
+  if (embed.readDataBlock(html) !== base64) fail('data block does not match what was written');
 
-    // Write composed content to index.html
-    fs.writeFileSync(indexPath, composed, 'utf8');
-    console.log('index.html cleared, updated with latest bootstrap.html and all-cars-from-db.json data');
+  const totalMb = html.length / 1048576;
+  fs.writeFileSync(outputPath, html, 'utf-8');
+  console.log(`\nwrote ${outputPath}`);
+  console.log(`index.html   : ${totalMb.toFixed(1)} MB (GitHub Pages limit: 100 MB)`);
+  if (totalMb > 95) console.warn('WARNING: approaching the 100 MB GitHub Pages file limit.');
+  console.log(`cars embedded: ${cars.length} (no cap)`);
 }
 
 main();

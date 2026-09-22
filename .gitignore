@@ -17,6 +17,9 @@
 # Local Algolia credential override (public search key, but machine-specific)
 /Scraper/algolia-credentials.json
 
+# NOTE: index.html and all-cars-from-db.json are deliberately NOT ignored - they
+# are the published page / its source data for the GitHub Pages deploy.
+
 # Diagnostics scratch space (archived page snapshots, probes)
 /Scraper/diag
 
