@@ -43,15 +43,17 @@ model Car {
   last_updated      DateTime
   history           CarHistory[]
 
-  @@index([make])
-  @@index([model])
-  @@index([year])
-  @@index([mileage])
-  @@index([price])
-  @@index([bodyType])
-  @@index([transmissionType])
-  @@index([fuelType])
-  @@index([location])
+  // NOTE: no @@index declarations on purpose.
+  //
+  // Every query the app makes either looks a Car up by its primary key
+  // (`listingId`) or orders by `last_updated` (export-cars-from-db.js). None of
+  // the previously declared indexes (make, model, year, mileage, price,
+  // bodyType, transmissionType, fuelType, location) were used by any query, and
+  // together they occupied ~18 MB of the database.
+  //
+  // Measured: dropping them took dev.db from 98.85 MB to 80.99 MB, with no
+  // slowdown in `orderBy last_updated` or `where listingId in (...)`.
+  // See prisma/migrations/20260923130000_drop_unused_car_indexes.
 }
 
 model CarHistory {

@@ -3,6 +3,48 @@
 Scrapes used-car listings from `https://uae.dubizzle.com/motors/used-cars/`, stores
 them in SQLite via Prisma, and rebuilds the static `index.html` front end.
 
+## Fresh clone
+
+```bash
+npm install
+npm run db:setup      # creates prisma/prisma/dev.db from migrations
+npm run db:seed       # restore the archived scrapes into the DB
+npm run export:all && npm run sync:index   # build index.html
+```
+
+A fresh clone has **no database and an empty `Scraper/unprocessed/`**, so there is
+nothing for `npm run db:save` to import. The archived scrape runs live in
+`Scraper/processed/`; the restore step moves them back into the import queue and
+loads them:
+
+```bash
+npm run db:restore         # dry-run: report what would be restored
+npm run db:restore:apply   # move processed/ -> unprocessed/
+npm run db:save            # import the queue
+```
+
+`db:seed` chains all three. Flags accepted by `db:restore`:
+
+| flag | effect |
+| --- | --- |
+| `--apply` | actually move the files (without it, dry-run only) |
+| `--copy` | copy instead of move, keeping the archive in place |
+| `--limit N` | restore only the first N runs |
+
+Each archived filename carries its original scrape timestamp
+(`<ISO>-<count>.json`), so restored rows come back with their real `last_updated`
+values and the queue imports oldest-first, exactly like a live run. The archive is
+large (~2.8 GB / 159 runs), and `--apply` **moves** rather than copies so it does
+not double the disk usage — pass `--copy` if you want to keep both.
+
+Then, for current data rather than the archive:
+
+```bash
+npm run scrape        # needs a valid Algolia key, see "If the key rotates"
+```
+
+---
+
 ## Daily use
 
 ```bash
@@ -19,7 +61,14 @@ Individual steps:
 | `npm run test:scrape` | unit tests only, no network |
 | `npm run test:db` | save-to-db regression test (throwaway database) |
 | `npm run scrape:repair -- <file.json>` | fix schema-invalid fields in an existing scrape file |
-| `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB || `npm run export:all` | dump every car from the DB to `all-cars-from-db.json` |
+| `npm run db:setup` | create/upgrade the database from migrations |
+| `npm run db:seed` | restore the archive into the DB (fresh clone) |
+| `npm run db:restore` | dry-run of the archive restore |
+| `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB |
+| `npm run db:compact` | report/drop the unused Car indexes (no data lost) |
+| `npm run db:purge -- --older-than 90` | delete listings not seen recently (dry-run by default) |
+| `npm run db:size` | audit table sizes, staleness and history depth |
+| `npm run export:all` | dump every car from the DB to `all-cars-from-db.json` |
 | `npm run sync:index` | rebuild `index.html` from `bootstrap.html` + the export |
 | `npm run migrate:template` | convert a `bootstrap.html` that still has inline JSON |
 | `npm run studio` | Prisma Studio |
@@ -188,6 +237,97 @@ timestamp and erase the history.
 Files move to `processed/` only after their rows are committed, and re-running is
 safe: rows already at or newer than the file's timestamp are skipped.
 
+## Database size
+
+`dev.db` sits right at ~99 MB, and Prisma's own tooling refuses to open a SQLite
+file larger than 100 MB (`migrate diff` fails with *"File opened that is not a
+database file"*). It is already `VACUUM`ed - `freelist_count` is 0 - so there is no
+free space to reclaim; the size is real data. Two levers, one of which throws away
+nothing.
+
+### 1. Drop the unused indexes (`npm run db:compact`) - no data lost
+
+The app only ever queries `Car` by `listingId` (the primary key) or orders by
+`last_updated`. The nine `@@index` declarations that used to be in
+`prisma/schema.prisma` were never used by any query, and together cost ~18 MB.
+
+This is now handled by a migration -
+`prisma/migrations/20260923143000_drop_unused_car_indexes` - so it applies
+automatically:
+
+```bash
+npm run db:setup      # prisma migrate deploy
+```
+
+`npm run scrape` also applies migrations as its first step. The migration is
+followed by the existing `VACUUM` (`reclaim-db-space.sql`), which is what actually
+returns the space to the filesystem.
+
+Measured on a copy of the live database: **98.85 MB → 80.99 MB** (saved 17.86 MB,
+18.1%), with `car.count`, `findUnique` by `listingId`, `orderBy last_updated`,
+`findMany where listingId in (...)`, `updateMany` and `createMany` all still
+working, and `PRAGMA integrity_check` returning `ok`. No rows are touched.
+
+`npm run db:compact` reports and, with `--apply`, can drop the indexes for a
+database where the migration is recorded as applied but they are somehow still
+present. It refuses to act while the migration is pending, since dropping them
+early would make the migration fail.
+
+### 2. Purge listings that are no longer live (`npm run db:purge`) - deletes rows
+
+Every scrape writes a full snapshot of the live inventory (~34.5k listings), but
+rows are never removed, so the table accumulates delisted cars. At the last audit:
+
+```
+cars total           : 117,993
+not seen in 7 days   :  82,853  (70%)
+not seen in 30 days  :  82,853
+not seen in 90 days  :  82,853
+not seen in 180 days :  82,853
+```
+
+That count is identical at every cutoff, which is the important detail: these are
+not gradually ageing out, they are **82,853 listings from before the Algolia
+rewrite that have never been re-seen**. Only ~35,140 are actually live.
+
+```bash
+npm run db:purge -- --older-than 90            # report only (dry-run is the default)
+npm run db:purge -- --older-than 90 --apply    # delete + VACUUM
+```
+
+At 90 days that removes 82,853 cars and 122,762 history rows, taking the database
+from ~99 MB to **~29 MB**. The export and the page shrink with it:
+
+| | now | after a 90-day purge |
+| --- | --- | --- |
+| `dev.db` | 98.85 MB | ~29 MB |
+| `all-cars-from-db.json` | 115.6 MB | ~34 MB |
+| `index.html` | 20.4 MB | ~6 MB |
+
+This is destructive and opt-in: dry-run is the default and it prints exactly how
+many cars and history rows it would remove before you pass `--apply`. Do the
+index step first - it is free.
+
+## Which script does what
+
+`export-cars-from-db.js` is still required. The data path is two steps and both
+are needed:
+
+```
+dev.db (SQLite)
+   -> export-cars-from-db.js          -> all-cars-from-db.json  (dump from the DB)
+   -> update-index-html-with-new-cars.js -> index.html           (compress + embed)
+```
+
+`update-index-html-with-new-cars.js` deliberately does **not** read the database:
+it takes `bootstrap.html` plus `all-cars-from-db.json` and compresses that JSON
+into the page. That keeps the page builder pure - you can rebuild `index.html`
+from a saved export with no database - and leaves the export as a plain,
+inspectable JSON artifact.
+
+They are not alternatives. `npm run export:all` then `npm run sync:index` is
+exactly what the `scrape` pipeline runs at the end.
+
 ## If the key rotates
 
 The key above is the public search key every browser receives, so it is not a
@@ -214,6 +354,9 @@ or copy `Scraper/algolia-credentials.example.json` to
 | `Scraper/algolia-config.js` | credentials, filter, tuning |
 | `Scraper/algolia-mapper.js` | Algolia hit → DB/export field mapping |
 | `Scraper/save-to-db.js` | import `unprocessed/*.json` → SQLite (batched) |
+| `Scraper/restore-processed.js` | move the archive back into the import queue |
+| `Scraper/compact-db.js` | drop the unused Car indexes (no data lost) |
+| `Scraper/purge-stale.js` | delete listings not seen recently |
 | `Scraper/test-save-to-db.js` | regression test for the import (throwaway db) |
 | `Scraper/repair-scrape.js` | fix schema-invalid fields in an existing scrape file |
 | `Scraper/test.js` | mapper unit tests + live API smoke test |
