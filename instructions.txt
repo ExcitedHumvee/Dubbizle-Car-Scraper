@@ -1,0 +1,12 @@
+processed completed instructions {
+    do we still need file export-cars-from-db.js now that we have update-index-html-with-new-cars.js?
+    dev.db is over 100MB i think, any way to reduce it?
+}
+
+to process instructions {
+
+}
+
+do not process instrcutions {
+    suppose someone clones this project from scratch, there may not be prisma db setup, create npm script to move all processed jsons to unprocessed and setup to DB 
+}
