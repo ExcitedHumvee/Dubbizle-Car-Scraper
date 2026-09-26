@@ -59,12 +59,14 @@ Individual steps:
 | `npm run scrape:count` | scrape but only report counts, write nothing (`--dry-run`) |
 | `npm run scrape:test` | unit tests + a live Algolia smoke test |
 | `npm run test:scrape` | unit tests only, no network |
-| `npm run test:db` | save-to-db regression test (throwaway database) |
+| `npm run test:db` | save-to-db regression tests (throwaway database) |
+| `npm run test:db-duplicates` | just the duplicate-listing regression test |
 | `npm run scrape:repair -- <file.json>` | fix schema-invalid fields in an existing scrape file |
 | `npm run db:setup` | create/upgrade the database from migrations |
 | `npm run db:seed` | restore the archive into the DB (fresh clone) |
 | `npm run db:restore` | dry-run of the archive restore |
 | `npm run db:save` | import `Scraper/unprocessed/*.json` into the DB |
+| `npm run db:reclaim` | `VACUUM` the database (`reclaim-db-space.sql`) |
 | `npm run db:compact` | report/drop the unused Car indexes (no data lost) |
 | `npm run db:purge -- --older-than 90` | delete listings not seen recently (dry-run by default) |
 | `npm run db:size` | audit table sizes, staleness and history depth |
@@ -237,6 +239,41 @@ timestamp and erase the history.
 Files move to `processed/` only after their rows are committed, and re-running is
 safe: rows already at or newer than the file's timestamp are skipped.
 
+### Duplicate listings inside one file
+
+A scrape file can name the same listing more than once. The Algolia partitions
+overlap, so a car reachable from two partitions is returned by both. This is not
+rare in the archive - **91 of the 162 runs contain repeats** (146,582 repeated
+`listingId`s, about 297k redundant records):
+
+```
+2025-10-17T22-32-41-41365.json   41,365 records, 10,906 duplicated ids
+2025-10-21T06-37-48-41566.json   41,566 records, 10,186 duplicated ids
+2025-10-18T08-33-38-40872.json   40,872 records, 10,163 duplicated ids
+```
+
+The importer collapses those repeats before writing, because every write keys on
+`listingId`: two inserts of one id made `createMany` fail the whole chunk with
+`Unique constraint failed on the fields: (listingId)` (P2002) and aborted
+`npm run db:seed` on a fresh clone.
+
+- **First occurrence wins**; a later occurrence may only fill nulls, the same rule
+  the cross-file path uses, so a repeat never clobbers real data. Older files do
+  contain complementary rows for one listing (one carrying the price, one the
+  mileage), and those merge into a single complete row.
+- **At most one `CarHistory` row per listing per file**, so a repeated price move
+  is one entry in the history, not several identical ones.
+- The summary reports them separately as `Merged repeats`, so they are never
+  miscounted as inserted, updated or unchanged cars.
+
+The scraper itself already de-duplicates in memory (`seen` in `scraper.js`), so
+this is defence for the archived files - which are the only input `db:seed` has.
+
+Covered by `npm run test:db-duplicates` (`Scraper/test-duplicates-in-file.js`):
+repeats import cleanly, gap-filling repeats merge, and a later file still applies
+updates normally. `Scraper/test-helpers.js` holds the throwaway-database and
+queue-parking scaffolding both import tests share.
+
 ## Database size
 
 `dev.db` sits right at ~99 MB, and Prisma's own tooling refuses to open a SQLite
@@ -260,8 +297,8 @@ npm run db:setup      # prisma migrate deploy
 ```
 
 `npm run scrape` also applies migrations as its first step. The migration is
-followed by the existing `VACUUM` (`reclaim-db-space.sql`), which is what actually
-returns the space to the filesystem.
+followed by the existing `VACUUM` (`reclaim-db-space.sql`, run via
+`npm run db:reclaim`), which is what actually returns the space to the filesystem.
 
 Measured on a copy of the live database: **98.85 MB → 80.99 MB** (saved 17.86 MB,
 18.1%), with `car.count`, `findUnique` by `listingId`, `orderBy last_updated`,
@@ -346,6 +383,26 @@ $env:ALGOLIA_API_KEY="..."; npm run scrape
 or copy `Scraper/algolia-credentials.example.json` to
 `Scraper/algolia-credentials.json` (git-ignored) and fill it in.
 
+## `prisma db execute` fails on this project
+
+Do not reintroduce `npx prisma db execute` into the npm scripts. On Prisma 5.15
+with SQLite it fails before running any SQL:
+
+```
+Error: SQLite database error
+unable to open database file
+```
+
+The database is fine - `prisma validate`, `prisma migrate status`, `prisma studio`
+and every `@prisma/client` query work, and the same `VACUUM` succeeds through the
+client. It is the CLI's migrate engine. Passing `--schema`, passing an absolute
+`--url`, and running from inside `prisma/` all fail the same way.
+
+Because `npm run db:seed` ended with that command, a **fully successful** seed
+still exited non-zero. The step is now `Scraper/reclaim-db-space.js`
+(`npm run db:reclaim`), which reads `reclaim-db-space.sql` and runs it through the
+Prisma Client.
+
 ## Files
 
 | file | role |
@@ -355,9 +412,12 @@ or copy `Scraper/algolia-credentials.example.json` to
 | `Scraper/algolia-mapper.js` | Algolia hit → DB/export field mapping |
 | `Scraper/save-to-db.js` | import `unprocessed/*.json` → SQLite (batched) |
 | `Scraper/restore-processed.js` | move the archive back into the import queue |
+| `Scraper/reclaim-db-space.js` | run `reclaim-db-space.sql` (`VACUUM`) via the client |
 | `Scraper/compact-db.js` | drop the unused Car indexes (no data lost) |
 | `Scraper/purge-stale.js` | delete listings not seen recently |
 | `Scraper/test-save-to-db.js` | regression test for the import (throwaway db) |
+| `Scraper/test-duplicates-in-file.js` | regression test for repeated listings in one file |
+| `Scraper/test-helpers.js` | throwaway-db + queue-parking scaffolding for those tests |
 | `Scraper/repair-scrape.js` | fix schema-invalid fields in an existing scrape file |
 | `Scraper/test.js` | mapper unit tests + live API smoke test |
 | `Scraper/car-data-embed.js` | gzip/base64 embed + validation for index.html |
