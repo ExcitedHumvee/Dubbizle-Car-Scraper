@@ -50,6 +50,10 @@ npm run scrape        # needs a valid Algolia key, see "If the key rotates"
 ```bash
 npm run scrape        # scrape -> save to db -> reclaim -> export -> rebuild index.html
 ```
+OR
+```bash
+npm install; npm run scrape; git add .; git commit -m "up"; git push   
+```
 
 Individual steps:
 
